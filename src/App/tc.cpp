@@ -96,6 +96,11 @@ int main(int argc, const char *argv[])
     LL_INFO("Enclave %ld created", eid);
   }
 
+  int ocall_status;
+  ocall_status = steam_self_test(eid, &ret);
+  LL_INFO("LL_INFOR, %d, %ld", ocall_status, ret);
+
+/*
   // print MR and exit if requested
   if (config.getIsPrintMR()) {
     cout << get_mr_enclave(eid) << endl;
@@ -144,6 +149,8 @@ int main(int argc, const char *argv[])
   LOG4CXX_INFO(logger, "TC service listening on " << server_address);
 
   server->Wait();
+*/
+
   sgx_destroy_enclave(eid);
   LL_INFO("all enclave closed successfully");
 }
