@@ -1,16 +1,14 @@
 {
-  "name": "Extension Demo",
+  "name": "Study #0",
   "version": "0.1",
-  "description": "Build an Basic Extension!",
+  "description": "Study #0: Demographic data collection (source: Coinbase)",
   "permissions": [
-    "activeTab", 
-    "webRequest"
-],
-   "host_permissions": [ 
-    "*://coinbase.com/"
+    "webRequest",
+    "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"],
+    "persistent": true
   },
-  "manifest_version": 3 
+  "manifest_version": 2 
 }
