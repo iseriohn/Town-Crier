@@ -1,0 +1,16 @@
+{
+  "name": "Extension Demo",
+  "version": "0.1",
+  "description": "Build an Basic Extension!",
+  "permissions": [
+    "activeTab", 
+    "webRequest"
+],
+   "host_permissions": [ 
+    "*://coinbase.com/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "manifest_version": 3 
+}
