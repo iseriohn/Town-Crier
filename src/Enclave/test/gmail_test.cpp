@@ -41,87 +41,35 @@
 // Google Faculty Research Awards, and a VMWare Research Award.
 //
 
-#include <gtest/gtest.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <debug.h>
+#include "tls_client.h"
+#include "scrapers/flight.h"
+#include "../log.h"
+#include "commons.h"
 
-#include "App/utils.h"
-#include "App/Enclave_u.h"
-#include "App/test/SGXTestBase.h"
+int gmail_self_test() {
+/*
+    GmailScraper testScraper;
 
-class Scraper : public SGXTestBase {};
+  gmail_error err= testScraper.get_flight_delay(1492100100, "zzz", &delay);
+  if (err != NOT_FOUND) {
+    LL_CRITICAL("err should have been NOT_FOUND");
+    rc = -1;
+  }
 
-TEST_F(Scraper, gmail) {
-    int ocall_status, ret;
-    ocall_status = gmail_self_test(eid, &ret);
-    EXPECT_EQ(0, ocall_status);
-    EXPECT_EQ(0, ret);
+  string flight_num = "FJM273";
+  flight_num.append(32 - flight_num.length(), 0);
+
+  string unx_epoch = "\x58\xEF\xA4\x04";
+  unx_epoch.insert(unx_epoch.begin(), 32 - unx_epoch.length(), '\0');
+
+  testScraper.handle((uint8_t *) (flight_num + unx_epoch).c_str(), 32 * 2, &delay);
+  return rc;
+*/
+    return 0;
 }
+//1477276620,
+//filed_departuerrime\":1477276620
 
-TEST_F(Scraper, yahoo) {
-  int ocall_status, ret;
-  ocall_status = yahoo_self_test(eid, &ret);
-  EXPECT_EQ(0, ocall_status);
-  EXPECT_EQ(0, ret);
-}
-
-TEST_F(Scraper, coinmarket) {
-  int ocall_status, ret;
-  ocall_status = coin_self_test(eid, &ret);
-  EXPECT_EQ(0, ocall_status);
-  EXPECT_EQ(0, ret);
-}
-
-TEST_F(Scraper, steam) {
-  int ocall_status, ret;
-  ocall_status = steam_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
-
-TEST_F(Scraper, google) {
-  int ocall_status, ret;
-  ocall_status = google_self_test(eid, &ret);
-  EXPECT_EQ(0, ocall_status);
-  EXPECT_EQ(0, ret);
-}
-
-TEST_F(Scraper, bloomberg) {
-  int ocall_status, ret;
-  ocall_status = bloomberg_self_test(eid, &ret);
-  EXPECT_EQ(0, ocall_status);
-  EXPECT_EQ(0, ret);
-}
-
-TEST_F(Scraper, flight) {
-  int ocall_status, ret;
-  ocall_status = flight_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
-
-TEST_F(Scraper, stock) {
-  int ocall_status, ret;
-  ocall_status = stockticker_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
-
-TEST_F(Scraper, weather) {
-  int ocall_status, ret;
-  ocall_status = weather_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
-
-TEST_F(Scraper, ups) {
-  int ocall_status, ret;
-  ocall_status = ups_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
-
-TEST_F(Scraper, wolfram) {
-  int ocall_status, ret;
-  ocall_status = wolfram_self_test(eid, &ret);
-  ASSERT_EQ(0, ocall_status);
-  ASSERT_EQ(0, ret);
-}
