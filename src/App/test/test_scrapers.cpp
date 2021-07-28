@@ -49,12 +49,14 @@
 
 class Scraper : public SGXTestBase {};
 
+/*
 TEST_F(Scraper, gmail) {
     int ocall_status, ret;
     ocall_status = gmail_self_test(eid, &ret);
     EXPECT_EQ(0, ocall_status);
     EXPECT_EQ(0, ret);
 }
+*/
 
 TEST_F(Scraper, yahoo) {
   int ocall_status, ret;

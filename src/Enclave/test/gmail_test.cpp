@@ -43,17 +43,69 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <iostream>
+
 #include <debug.h>
 #include "tls_client.h"
-#include "scrapers/flight.h"
+#include "scrapers/gmail.h"
 #include "../log.h"
 #include "commons.h"
 
-int gmail_self_test() {
-/*
-    GmailScraper testScraper;
+int gmail_self_test(unsigned char* data, size_t data_len) {
+    // Build header for https request
+  char* loc = strstr((char*)data, (char*)"Host:");
+  int pos = loc - (char*)data;
+  char url[256];
+  strncpy(url, (char*)data + 4, pos - 5);
+  url[pos - 5] = 0;
 
-  gmail_error err= testScraper.get_flight_delay(1492100100, "zzz", &delay);
+  data = data + pos;
+  data_len -= pos;
+  std::vector<string> header;
+  loc = strstr((char*)data, "\n");
+  while (loc!= NULL) {
+    pos = loc - (char*)data;
+    char tmp[1000000];
+    strncpy(tmp, (char*)data, pos);
+    tmp[pos] = 0;
+    if (pos > 0) header.push_back(string(tmp));
+    data = data + pos + 1;
+    data_len -= pos + 1;
+    loc = strstr((char*)data, "\n");
+  }
+  if (data_len > 0) header.push_back(string((char*)data));
+
+
+  HttpRequest httpRequest("onlinebanking.mtb.com", url, header);
+  HttpsClient httpClient(httpRequest);
+
+  string api_response;
+  try {
+    HttpResponse response = httpClient.getResponse();
+    api_response = response.getContent();
+  } catch (const std::runtime_error &e) {
+    LL_CRITICAL("%s", e.what());
+    httpClient.close();
+    return HTTP_ERROR;
+  }
+
+  if (api_response.empty()) {
+    LL_CRITICAL("api return empty");
+    return HTTP_ERROR;
+  }
+  LL_CRITICAL("%s", api_response.c_str());
+  try {
+  }
+  catch (const std::exception &e) {
+    LL_CRITICAL("%s", e.what());
+    return INTERNAL_ERR;
+  }
+
+    /*
+  GmailScraper testScraper;
+
+  gmail_error err= testScraper.get_data(query);
   if (err != NOT_FOUND) {
     LL_CRITICAL("err should have been NOT_FOUND");
     rc = -1;
@@ -67,7 +119,7 @@ int gmail_self_test() {
 
   testScraper.handle((uint8_t *) (flight_num + unx_epoch).c_str(), 32 * 2, &delay);
   return rc;
-*/
+  */
     return 0;
 }
 //1477276620,
