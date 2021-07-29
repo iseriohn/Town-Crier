@@ -43,6 +43,15 @@
 
   return grpc::Status::OK;
 }
+
+::grpc::Status RpcServer::participate(::grpc::ServerContext* context,
+                                 const ::rpc::Data* request,
+                                 ::rpc::Empty* response)
+{
+  LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
+  return grpc::Status::OK;
+}
+
 ::grpc::Status RpcServer::status(::grpc::ServerContext* context,
                                  const ::rpc::Empty* request,
                                  ::rpc::Status* response)

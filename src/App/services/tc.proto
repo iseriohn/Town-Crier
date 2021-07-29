@@ -6,6 +6,11 @@ service towncrier {
   rpc attest(Empty) returns (Attestation) {}
   rpc status(Empty) returns (Status) {}
   rpc process(Request) returns (Response) {}
+  rpc participate(Data) returns (Empty) {}
+}
+
+message Data {
+    string data = 1;
 }
 
 message Attestation {

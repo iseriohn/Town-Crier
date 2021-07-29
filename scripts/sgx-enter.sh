@@ -12,6 +12,7 @@ which docker >/dev/null || {
 
 # Start SGX Rust Docker container.
 docker run --rm -t -i \
+  --network bridge -p "12345:8123" \
   --name "tc-devel" \
   -v ${ROOTDIR}:/code \
   -e "SGX_SDK=/opt/intel/sgxsdk" \
