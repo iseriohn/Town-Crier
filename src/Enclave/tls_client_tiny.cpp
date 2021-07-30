@@ -337,9 +337,7 @@ HttpResponse HttpsClient::getResponse()
     throw runtime_error("mbedtls_ssl_config_defaults");
   }
 
-#if defined(TRACE_TLS_CLIENT)
   mbedtls_ssl_conf_verify(&conf, my_verify, NULL);
-#endif
 
 #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
   if ((ret = mbedtls_ssl_conf_max_frag_len(
@@ -353,6 +351,18 @@ HttpResponse HttpsClient::getResponse()
 
   mbedtls_ssl_conf_read_timeout(&conf, 0);
   mbedtls_ssl_conf_ca_chain(&conf, &cacert, NULL);
+  {
+    int n_cert = 0;
+    auto s = conf.ca_chain;
+    while (s != NULL) {
+      s = s->next;
+      n_cert ++;
+    }
+    LL_INFO("%d certificates loaded to CA chain", n_cert);
+  }
+
+  // Disable server certificate checking for debuggin
+  mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
   mbedtls_ssl_conf_session_tickets(&conf, MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
@@ -389,18 +399,10 @@ HttpResponse HttpsClient::getResponse()
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
       LL_DEBUG("Verifying peer X.509 certificate...");
       if ((flags = mbedtls_ssl_get_verify_result(&ssl)) != 0) {
-        LL_CRITICAL("X.509 certificate failed to verify");
-        char temp_buf[1024];
-        if (mbedtls_ssl_get_peer_cert(&ssl) != NULL) {
-          LL_CRITICAL("Peer certificate information");
-          mbedtls_x509_crt_info((char *)temp_buf,
-                                sizeof(temp_buf) - 1,
-                                "|-",
-                                mbedtls_ssl_get_peer_cert(&ssl));
-          mbedtls_printf("%s\n", temp_buf);
-        } else {
-          LL_CRITICAL("mbedtls_ssl_get_peer_cert returns NULL");
-        }
+        // convert error code to error string
+        char vrfy_buf[512];
+        mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "", flags );
+        LL_CRITICAL("X.509 certificate failed to verify: %s", vrfy_buf);
       } else {
         LL_DEBUG("X.509 Verifies");
       }
