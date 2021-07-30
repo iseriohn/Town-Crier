@@ -250,7 +250,7 @@ HttpsClient::HttpsClient(HttpRequest &httpRequest) : httpRequest(httpRequest)
 string HttpsClient::buildRequestMessage()
 {
   string requestMessage;
-  requestMessage += string("POST ") + httpRequest.getUrl();
+  requestMessage += string("GET ") + httpRequest.getUrl();
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("HTTP/1.1") == string::npos) {
     requestMessage += " HTTP/1.1";
@@ -263,8 +263,8 @@ string HttpsClient::buildRequestMessage()
 
   //requestMessage += "Accept: text/html\r\n";
   //requestMessage += "Connection: keep-alive\r\n";
-  //requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\n";
-  //requestMessage += "Path: /api/v2/user?\r\nHost: www.coinbase.com\r\n";
+  requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\n";
+  
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("Host:") == string::npos) {
     requestMessage += "Host: " + httpRequest.getHost() + "\r\n";
@@ -495,9 +495,7 @@ HttpResponse HttpsClient::getResponse()
   LL_DEBUG("HTTP response len=%zu", response.body.size());
 
   string content(response.body.begin(), response.body.end());
-
   HttpResponse resp(response.code, "", content);
-
   LL_DEBUG("Response body (len=%zu):\n%s",
            content.length(),
            content.length() == 0 ? "empty" : content.c_str());
