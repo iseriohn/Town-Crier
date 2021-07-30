@@ -131,7 +131,8 @@ int main(int argc, const char *argv[])
     LL_CRITICAL("cannot initialize enclave env");
     exit(-1);
   }
-  
+ 
+  /*
   // starting the backend RPC server
   RpcServer tc_service(eid);
   std::string server_address("0.0.0.0:" +
@@ -144,16 +145,16 @@ int main(int argc, const char *argv[])
   LOG4CXX_INFO(logger, "TC service listening on " << server_address);
 
   server->Wait();
-
+*/
  string query = "";
  char tmp[1000000];
  while (gets(tmp)) {
-     query = query + "\n" + tmp;
+     query = query + tmp + "\n";
  }
  int ocall_status;
  ocall_status = gmail_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
  LL_INFO("LL_INFOR, %d, %ld", ocall_status, ret);
-
-  sgx_destroy_enclave(eid);
+  
+ sgx_destroy_enclave(eid);
   LL_INFO("all enclave closed successfully");
 }

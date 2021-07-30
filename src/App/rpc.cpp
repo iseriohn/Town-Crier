@@ -49,6 +49,33 @@
                                  ::rpc::Empty* response)
 {
   LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
+  int ecall_ret = TC_SUCCESS;
+
+  try {
+    //auto req_id = request->id();
+    //auto req_type = request->type();
+    //auto req_data_ptr =
+    //    reinterpret_cast<const uint8_t*>(request->data().data());
+    //auto req_data_len = request->data().size();
+    auto req_data = request->data();
+    auto st = gmail_self_test(eid,
+                             &ecall_ret,
+                             reinterpret_cast<unsigned char*>(const_cast<char*>(req_data.c_str())), 
+                             req_data.length()
+                             );
+
+    if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
+      LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
+      throw std::runtime_error("ecall failed");
+    } else {
+      this->logger->info("ecall succeeds");
+      return grpc::Status::OK;
+    }
+  }
+  catch (const std::exception& e) {
+    LOG4CXX_ERROR(this->logger, "exception: " << e.what())
+  }
+
   return grpc::Status::OK;
 }
 

@@ -250,7 +250,7 @@ HttpsClient::HttpsClient(HttpRequest &httpRequest) : httpRequest(httpRequest)
 string HttpsClient::buildRequestMessage()
 {
   string requestMessage;
-  requestMessage += string("GET ") + httpRequest.getUrl();
+  requestMessage += string("POST ") + httpRequest.getUrl();
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("HTTP/1.1") == string::npos) {
     requestMessage += " HTTP/1.1";
@@ -261,12 +261,14 @@ string HttpsClient::buildRequestMessage()
     requestMessage += (h + "\r\n");
   }
 
-  requestMessage += "Accept: text/html\r\n";
+  //requestMessage += "Accept: text/html\r\n";
+  //requestMessage += "Connection: keep-alive\r\n";
+  //requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\n";
+  //requestMessage += "Path: /api/v2/user?\r\nHost: www.coinbase.com\r\n";
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("Host:") == string::npos) {
     requestMessage += "Host: " + httpRequest.getHost() + "\r\n";
   }
-
   requestMessage += HttpsClient::GET_END;
 
   return requestMessage;
@@ -275,6 +277,7 @@ string HttpsClient::buildRequestMessage()
 void HttpsClient::sendRequest()
 {
   string requestMessage = buildRequestMessage();
+  LL_CRITICAL("%s", requestMessage.c_str());
 
 #ifdef HEXDUMP_TLS_TRANSCRIPT
   dump_buf("Request: ",
@@ -432,7 +435,7 @@ HttpResponse HttpsClient::getResponse()
   http_roundtripper rt;
   http_init(&rt, responseFuncs, &response);
 
-  unsigned char buffer[4096];
+  unsigned char buffer[40960];
   bool http_need_more = true;
   while (http_need_more) {
     /*

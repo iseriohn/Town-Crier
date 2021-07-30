@@ -43,6 +43,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "log.h"
+
 #include "Enclave_t.h"
 #include "mbedtls/platform.h"
 #include "mbedtls/net_v.h"
@@ -78,10 +80,12 @@ class HttpRequest {
       host(host), port("443"), url(url), isHttp11(isHttp11) {};
 
   HttpRequest(const string &host, const string &url, const vector <string> &headers) :
-      host(host), port("443"), url(url), headers(headers), isHttp11(false) {};
+      host(host), port("443"), url(url), headers(headers), isHttp11(false) {
+      };
 
   HttpRequest(const string &host, const string &url, const vector <string> &headers, bool isHttp11) :
-      host(host), port("443"), url(url), headers(headers), isHttp11(isHttp11) {};
+      host(host), port("443"), url(url), headers(headers), isHttp11(isHttp11) {
+      };
 
   HttpRequest(const string &host, const string &port, const string &url, const vector <string> &headers, bool isHttp11)
       :
