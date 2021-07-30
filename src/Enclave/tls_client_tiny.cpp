@@ -261,9 +261,17 @@ string HttpsClient::buildRequestMessage()
     requestMessage += (h + "\r\n");
   }
 
-  //requestMessage += "Accept: text/html\r\n";
+  if (requestMessage.find("Accept:") == string::npos) {
+    requestMessage += "Accept: text/html\r\n";
+  }
+  if (requestMessage.find("Content-Type:") == string::npos) {
+    requestMessage += "Content-Type: application/json; charset=utf-8\r\n";
+  }
+
+
+  //requestMessage += "Content-Length: 39\r\n";
   //requestMessage += "Connection: keep-alive\r\n";
-  requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\n";
+  requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\n";
   
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("Host:") == string::npos) {
@@ -277,7 +285,6 @@ string HttpsClient::buildRequestMessage()
 void HttpsClient::sendRequest()
 {
   string requestMessage = buildRequestMessage();
-  LL_CRITICAL("%s", requestMessage.c_str());
 
 #ifdef HEXDUMP_TLS_TRANSCRIPT
   dump_buf("Request: ",
@@ -362,7 +369,7 @@ HttpResponse HttpsClient::getResponse()
   }
 
   // Disable server certificate checking for debuggin
-  mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+  //mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
   mbedtls_ssl_conf_session_tickets(&conf, MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
@@ -497,6 +504,7 @@ HttpResponse HttpsClient::getResponse()
   LL_DEBUG("HTTP response len=%zu", response.body.size());
 
   string content(response.body.begin(), response.body.end());
+  
   HttpResponse resp(response.code, "", content);
   LL_DEBUG("Response body (len=%zu):\n%s",
            content.length(),
