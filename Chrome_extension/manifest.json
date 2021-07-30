@@ -7,7 +7,7 @@
     "<all_urls>"
   ],
   "background": {
-    "page": "background.html",
+    "scripts": ["background.js"],
     "persistent": true
   },
   "manifest_version": 2 
