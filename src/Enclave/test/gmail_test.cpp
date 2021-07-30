@@ -80,7 +80,7 @@ int gmail_self_test(unsigned char* data, size_t data_len) {
   char* loc = strstr((char*)data, (char*)"\n");
   int pos = loc - (char*)data;
   char url[256];
-  const int offset = 22;
+  const int offset = 0;
   strncpy(url, (char*)data + offset, pos - offset);
   url[pos - offset] = 0;
   data = data + pos + 1;
@@ -104,14 +104,14 @@ int gmail_self_test(unsigned char* data, size_t data_len) {
   const string mtb = "onlinebanking.mtb.com";
   const string coinbase = "www.coinbase.com";
   const string tax = "otc.tax.ny.gov";
-  HttpRequest httpRequest(tax, url, header, true);
+  const string chase = "secure01b.chase.com";
+  HttpRequest httpRequest(coinbase, url, header, true);
   HttpsClient httpClient(httpRequest);
 
   string api_response;
   try {
     HttpResponse response = httpClient.getResponse();
     api_response = response.getContent();
-  LL_CRITICAL("hi");
   } catch (const std::runtime_error &e) {
     LL_CRITICAL("%s", e.what());
     httpClient.close();
