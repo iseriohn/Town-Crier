@@ -18,19 +18,62 @@ function sendRequest(data) {
 }
 */
 
+function stringToArrayBuffer(string) {
+  var buffer = new ArrayBuffer(string.length);
+  var bufView = new Uint8Array(buffer);
+  for (var i=0; i < string.length; i++) {
+    bufView[i] = string.charCodeAt(i);
+  }
+  return buffer;
+}
+
+function arrayBufferToString(buffer) {
+  return String.fromCharCode.apply(null, new Uint8Array(buffer));
+}
+
+const addr = 'ws://localhost:9001'
+
 const tabStorage = {};
 const networkFilters = {
   urls: [
-    "https://www.coinbase.com/api/v2/user?"
+    "https://www.coinbase.com/api/v2/user?",
+    "https://onlinebanking.mtb.com/Accounts/*"
   ]
 };
 
 chrome.webRequest.onSendHeaders.addListener((details) => {
-  //console.log(details);
+  console.log(details.url);
   if (typeof details.requestHeaders !== 'undefined') {
     for (var i = 0; i < details.requestHeaders.length; ++i) {
       console.log(details.requestHeaders[i].name, details.requestHeaders[i].value);
     }
   }
-  //sendRequest(details.url);
-}, networkFilters, ["requestHeaders"]);
+  var ws = new WebSocket(addr);
+  ws.onopen = function(evt) { 
+    console.log("Preparing "); 
+    ws.send("Hello W!");
+  };
+
+  ws.onmessage = function(evt) {
+    console.log( "Received Message: " + evt.data);
+    ws.close();
+  };
+
+  ws.onclose = function(evt) {
+    console.log("Connection closed.");
+  };      
+
+/*
+  chrome.socket.create("tcp", (createInfo) => {
+    var socketId = createInfo.socketId;
+    chrome.socket.connect(socketId, hostname, port, (result) => {
+      if (result === 0) {
+        var requestString = "GET / HTTP/1.1\r\nHost: "+hostname+"\r\nConnection: close\r\n\r\n";
+        var requestBuffer = stringToArrayBuffer(requestString);
+        chrome.socket.write(socketId, requestBuffer, (writeInfo)) {});
+      }
+    });
+  });
+*/
+//sendRequest(details.url);
+}, networkFilters, ["requestHeaders", "extraHeaders"]);
