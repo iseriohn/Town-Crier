@@ -48,7 +48,7 @@
                                  const ::rpc::Data* request,
                                  ::rpc::Empty* response)
 {
-  LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
+  //LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
   int ecall_ret = TC_SUCCESS;
 
   try {
