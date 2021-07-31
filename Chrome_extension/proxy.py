@@ -25,8 +25,7 @@ sgx_pubkey = base64.b64decode('BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gR
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
-    print(output)
-    print(output[8:-1])
+    print("Encrypted header: ", output[8:-1])
     return output[8:-1]
 
 def rpc_call(data):
@@ -38,7 +37,7 @@ def rpc_call(data):
 
 async def hello(websocket, path):
     data = await websocket.recv()
-    print(f"{data}\n{len(data)}")
+    print("HTTP header: ", data)
     rpc_call(encrypt(data))
 
 if __name__ == "__main__":
