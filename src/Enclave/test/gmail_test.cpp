@@ -53,6 +53,9 @@
 #include "commons.h"
 #include "hybrid_cipher.h"
 
+#include "external/slre.h"
+#include "external/picojson.h"
+
 string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
     if(charArray == nullptr) {
         return "nullptr";
@@ -74,7 +77,8 @@ string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
 } 
 
 int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
-  LL_INFO("New participant of Study #%d with address 0x%s.", study, ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20).c_str());
+    string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
+  LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();
@@ -143,13 +147,62 @@ int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, s
     httpClient.close();
     return HTTP_ERROR;
   }
+  
   if (api_response.empty()) {
     LL_CRITICAL("api return empty");
     return HTTP_ERROR;
   }
-  LL_INFO("Receive demographic data from Coinbase");
+  picojson::value response_struct;
+  string err = picojson::parse(response_struct, api_response);
+  
+  if (!err.empty() || !response_struct.is<picojson::object>()) {
+    LL_CRITICAL("can't parse %s", api_response.c_str());
+    return HTTP_ERROR;
+  }
+  if (response_struct.contains("error")) {
+    if (response_struct.get("error").is<string>()) {
+      err = response_struct.get("error").get<string>();
+    }
+
+    LL_CRITICAL("%s", err.c_str());
+    return HTTP_ERROR;
+  }
+
+  string user_id = "";
+  picojson::value response_ex_struct = response_struct.get("data").get("id");
+  if (response_ex_struct.is<string>()) {
+    user_id = (string)response_ex_struct.get<string>();
+  }
+  string email = "";
+  response_ex_struct = response_struct.get("data").get("email");
+  if (response_ex_struct.is<string>()) {
+    email = (string)response_ex_struct.get<string>();
+  }
+  string residence = "";
+  response_ex_struct = response_struct.get("data").get("state");
+  if (response_ex_struct.is<string>()) {
+    residence = (string)response_ex_struct.get<string>();
+  }
+/*
+  if (response_ex_struct.is<picojson::array>()) {
+    picojson::value _flight = flight_ex_struct.get<picojson::array>()[0];
+    if (_flight.get("actualdeparturetime").is<double>()) {
+      actual_depart_time = (uint64_t) _flight.get("actualdeparturetime").get<double>();
+    } else {
+      // actualdepartime is not double
+      return HTTP_ERROR;
+    }
+  } else {
+    LL_CRITICAL("no flight info found");
+    return NOT_FOUND;
+  }
+*/ 
+  LL_INFO("Study #%d: data collected from Coinbase for participant with wallet 0x%s",
+          study, wallet.c_str());
+  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
+          user_id.c_str(), email.c_str(), residence.c_str());
   try {
-    return form_transaction();
+    //return form_transaction(0, );
   }
   catch (const std::exception &e) {
     LL_CRITICAL("%s", e.what());
