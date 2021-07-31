@@ -51,10 +51,17 @@
 #include "scrapers/gmail.h"
 #include "../log.h"
 #include "commons.h"
+#include "hybrid_cipher.h"
 
-int gmail_self_test(unsigned char* data, size_t data_len) {
-    // Build header for https request
+int gmail_self_test(unsigned char* sealed_data, size_t sealed_data_len) {
+  string plain = decrypt_query(sealed_data, sealed_data_len);
+  auto data = plain.c_str();
+  auto data_len = plain.size();
+
+  LL_CRITICAL("%s", plain.c_str());
+
 /*
+  // Build header for https request
   char* loc = strstr((char*)data, (char*)"Host:");
   int pos = loc - (char*)data;
   char url[256];
@@ -128,26 +135,7 @@ int gmail_self_test(unsigned char* data, size_t data_len) {
     LL_CRITICAL("%s", e.what());
     return INTERNAL_ERR;
   }
-    /*
-  GmailScraper testScraper;
-
-  gmail_error err= testScraper.get_data(query);
-  if (err != NOT_FOUND) {
-    LL_CRITICAL("err should have been NOT_FOUND");
-    rc = -1;
-  }
-
-  string flight_num = "FJM273";
-  flight_num.append(32 - flight_num.length(), 0);
-
-  string unx_epoch = "\x58\xEF\xA4\x04";
-  unx_epoch.insert(unx_epoch.begin(), 32 - unx_epoch.length(), '\0');
-
-  testScraper.handle((uint8_t *) (flight_num + unx_epoch).c_str(), 32 * 2, &delay);
-  return rc;
-  */
-    return 0;
+    
+  return 0;
 }
-//1477276620,
-//filed_departuerrime\":1477276620
 
