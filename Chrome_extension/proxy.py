@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import grpc
+import sys
 
 import tc_pb2
 import tc_pb2_grpc
@@ -11,6 +12,7 @@ from ecies.utils import generate_eth_key, generate_key
 from ecies import encrypt, decrypt
 from coincurve import PrivateKey
 from Crypto.Cipher import AES
+import web3
 
 import subprocess
 command = './hybrid-enc/henc'
@@ -30,7 +32,7 @@ def encrypt(msg):
 def rpc_call(data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
     stub = tc_pb2_grpc.towncrierStub(channel)
-    message = tc_pb2.Data(data=data)
+    message = tc_pb2.Data(study = 0, addr = bytes.fromhex(args[0][2:]), data = data)
     res = stub.participate(message)
 
 
@@ -39,8 +41,11 @@ async def hello(websocket, path):
     print(f"{data}\n{len(data)}")
     rpc_call(encrypt(data))
 
-#rpc_call(encrypt("hi\ hi"))    
-
-start_server = websockets.serve(hello, "localhost", proxy_port)
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    if (len(args) < 1 or not web3.Web3.isAddress(args[0])):
+        print("Please pass in your wallet address for receiving NFT")
+        exit()
+    start_server = websockets.serve(hello, "localhost", proxy_port)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
