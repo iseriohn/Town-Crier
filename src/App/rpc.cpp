@@ -57,9 +57,13 @@
     //auto req_data_ptr =
     //    reinterpret_cast<const uint8_t*>(request->data().data());
     //auto req_data_len = request->data().size();
+    auto study = request->study();
+    auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
     auto req_data = request->data();
     auto st = gmail_self_test(eid,
                              &ecall_ret,
+                             study,
+                             addr,
                              reinterpret_cast<unsigned char*>(const_cast<char*>(req_data.c_str())), 
                              req_data.length()
                              );

@@ -53,7 +53,7 @@
 #include "commons.h"
 #include "hybrid_cipher.h"
 
-int gmail_self_test(unsigned char* sealed_data, size_t sealed_data_len) {
+int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();

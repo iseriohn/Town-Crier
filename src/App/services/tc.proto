@@ -10,7 +10,9 @@ service towncrier {
 }
 
 message Data {
-    string data = 1;
+    uint32 study = 1;
+    bytes addr = 2;
+    string data = 3;
 }
 
 message Attestation {
