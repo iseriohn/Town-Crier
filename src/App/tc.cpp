@@ -131,7 +131,13 @@ int main(int argc, const char *argv[])
     LL_CRITICAL("cannot initialize enclave env");
     exit(-1);
   }
- 
+
+/*
+string query = "BBtE3OGlM7D+Y3Ckm/YYH9/7h+soed/AQKuyAVTildlvjUt7E6uF1rVh4JcGhePocwtawGisBivMJs9p/UALdbqZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIpSEb+UKJLpztFUUhZsFnZhtw==";
+ int ocall_status;
+ ocall_status = gmail_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
+*/
+
   // starting the backend RPC server
   RpcServer tc_service(eid);
   std::string server_address("0.0.0.0:" +
