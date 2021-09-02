@@ -19,7 +19,7 @@ enclave {
         public int weather_self_test();
         public int wolfram_self_test();
 	    public int dummy_test();
-        public int gmail_self_test(
+        public int demo_self_test(
                 uint32_t study,
                 [user_check] uint8_t* addr,
                 [user_check] unsigned char* data, size_t data_len);

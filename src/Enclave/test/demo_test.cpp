@@ -48,7 +48,7 @@
 
 #include <debug.h>
 #include "tls_client.h"
-#include "scrapers/gmail.h"
+#include "scrapers/spotify.h"
 #include "../log.h"
 #include "commons.h"
 #include "hybrid_cipher.h"
@@ -76,9 +76,10 @@ string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
     return s;
 } 
 
-int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
+int demo_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
     string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
-  LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
+  //LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
+  LL_INFO("New query received.");
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();
@@ -135,7 +136,8 @@ int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, s
   const string coinbase = "www.coinbase.com";
   const string tax = "otc.tax.ny.gov";
   const string chase = "secure01b.chase.com";
-  HttpRequest httpRequest(coinbase, url, header, true);
+  const string spotify = "api.spotify.com";
+  HttpRequest httpRequest(spotify, url, header, true);
   HttpsClient httpClient(httpRequest);
 
   string api_response;
@@ -147,7 +149,8 @@ int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, s
     httpClient.close();
     return HTTP_ERROR;
   }
-  
+ 
+  LL_CRITICAL("HTTP response: %s", api_response.c_str());
   if (api_response.empty()) {
     LL_CRITICAL("api return empty");
     return HTTP_ERROR;
@@ -169,6 +172,9 @@ int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, s
   }
 
   string user_id = "";
+  if (!response_struct.contains("data")) {
+          return 0;
+  }
   picojson::value response_ex_struct = response_struct.get("data").get("id");
   if (response_ex_struct.is<string>()) {
     user_id = (string)response_ex_struct.get<string>();
@@ -183,6 +189,7 @@ int gmail_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, s
   if (response_ex_struct.is<string>()) {
     residence = (string)response_ex_struct.get<string>();
   }
+
 /*
   if (response_ex_struct.is<picojson::array>()) {
     picojson::value _flight = flight_ex_struct.get<picojson::array>()[0];

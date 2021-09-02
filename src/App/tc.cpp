@@ -135,7 +135,7 @@ int main(int argc, const char *argv[])
 /*
 string query = "BBtE3OGlM7D+Y3Ckm/YYH9/7h+soed/AQKuyAVTildlvjUt7E6uF1rVh4JcGhePocwtawGisBivMJs9p/UALdbqZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIpSEb+UKJLpztFUUhZsFnZhtw==";
  int ocall_status;
- ocall_status = gmail_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
+ ocall_status = demo_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
 */
 
   // starting the backend RPC server
@@ -158,7 +158,7 @@ string query = "";
      query = query + tmp + "\n";
  }
  int ocall_status;
- ocall_status = gmail_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
+ ocall_status = demo_self_test(eid, &ret, reinterpret_cast<unsigned char*>(const_cast<char*>(query.c_str())), query.length());
  LL_INFO("LL_INFOR, %d, %ld", ocall_status, ret);
   */
 
