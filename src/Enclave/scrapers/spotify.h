@@ -58,7 +58,7 @@
 #include "tls_client.h"
 
 /* Define flight scraper specific errors */
-enum gmail_error {
+enum spotify_error {
   INVALID = 0,          /* Invalid Parameters passed to the function*/
   HTTP_ERROR,         /* HTTP request failed */
   INTERNAL_ERR,

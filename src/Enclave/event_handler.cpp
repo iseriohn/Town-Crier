@@ -143,13 +143,6 @@ int do_handle_request(int nonce,
     }
     break;
   }
-/*
-  case TYPE_GMAIL: {
-    //TODO
-    GmailScraper gmailHandler;
-    break; 
-  }
-*/
   case TYPE_FLIGHT_INS: {
     FlightScraper flightHandler;
     int delay = 0;

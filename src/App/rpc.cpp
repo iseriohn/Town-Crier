@@ -60,7 +60,7 @@
     auto study = request->study();
     auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
     auto req_data = request->data();
-    auto st = gmail_self_test(eid,
+    auto st = demo_self_test(eid,
                              &ecall_ret,
                              study,
                              addr,
