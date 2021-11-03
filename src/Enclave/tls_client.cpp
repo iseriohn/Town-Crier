@@ -246,17 +246,17 @@ string HttpsClient::buildRequestMessage() {
     requestMessage += " HTTP/1.1";
   }
   requestMessage += string("\r\n");
-
+  
   for (vector<string>::const_iterator it = httpRequest.getHeaders().begin();
        it != httpRequest.getHeaders().end(); it++) {
     requestMessage += (*it) + "\r\n";
   }
 
-  requestMessage += "Accept: text/html\r\n";
   if (httpRequest.getIsHttp11() && requestMessage.find("Host:") == string::npos) {
     requestMessage += "Host: " + httpRequest.getHost() + "\r\n";
   }
 
+  
   requestMessage += HttpsClient::GET_END;
 
   return requestMessage;

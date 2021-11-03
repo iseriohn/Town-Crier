@@ -267,11 +267,15 @@ string HttpsClient::buildRequestMessage()
   if (requestMessage.find("Content-Type:") == string::npos) {
     requestMessage += "Content-Type: application/json; charset=utf-8\r\n";
   }
-
-
-  //requestMessage += "Content-Length: 39\r\n";
-  //requestMessage += "Connection: keep-alive\r\n";
-  requestMessage += "Pragma: no-cache\r\nCache-Control: no-cache\r\n";
+  if (httpRequest.getIsHttp11() && requestMessage.find("Connection:") == string::npos) {
+    requestMessage += "Connection: keep-alive\r\n";
+  }
+  if (httpRequest.getIsHttp11() && requestMessage.find("Pragma:") == string::npos) {
+    requestMessage += "Pragma: no-cache\r\n";
+  }
+  if (httpRequest.getIsHttp11() && requestMessage.find("Cache-Control:") == string::npos) {
+    requestMessage += "Cache-Control: no-cache\r\n";
+  }
   
   if (httpRequest.getIsHttp11() &&
       requestMessage.find("Host:") == string::npos) {
@@ -459,6 +463,7 @@ HttpResponse HttpsClient::getResponse()
     LL_DEBUG("mbedtls_ssl_read returns %d (Content-Length=%d)",
              n_data,
              rt.contentlength);
+    
 
     if (n_data == MBEDTLS_ERR_SSL_WANT_READ ||
         n_data == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -496,11 +501,11 @@ HttpResponse HttpsClient::getResponse()
     }
   }  // while (http_need_more)
 
+  
   if (http_iserror(&rt)) {
     http_free(&rt);
     throw runtime_error("http roundtrip error code=" + to_string(rt.code));
   }
-
   LL_DEBUG("HTTP response len=%zu", response.body.size());
 
   string content(response.body.begin(), response.body.end());
