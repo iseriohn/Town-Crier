@@ -9,6 +9,7 @@ contracts/demo/chain0/
 *.so
 *.la
 *.a
+*.swp
 
 .idea
 bin
