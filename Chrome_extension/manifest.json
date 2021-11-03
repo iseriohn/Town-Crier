@@ -1,7 +1,7 @@
 {
   "name": "Study #0",
   "version": "0.1",
-  "description": "Study #0: Demographic data collection (source: Coinbase)",
+  "description": "Study #0: Demographic data collection (source: SSA)",
   "permissions": [
     "webRequest",
     "<all_urls>"

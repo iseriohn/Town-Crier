@@ -22,6 +22,7 @@ sgx_server = '128.84.84.208:12345'
 proxy_port = 9001
 
 sgx_pubkey = base64.b64decode('BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=')
+wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
@@ -31,7 +32,7 @@ def encrypt(msg):
 def rpc_call(data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
     stub = tc_pb2_grpc.towncrierStub(channel)
-    message = tc_pb2.Data(study = 0, addr = bytes.fromhex(args[0][2:]), data = data)
+    message = tc_pb2.Data(study = 0, addr = wallet_addr, data = data)
     res = stub.participate(message)
 
 
@@ -40,11 +41,11 @@ async def hello(websocket, path):
     print("HTTP header: ", data)
     rpc_call(encrypt(data))
 
+
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if (len(args) < 1 or not web3.Web3.isAddress(args[0])):
-        print("Please pass in your wallet address for receiving NFT")
-        exit()
+    if not (len(args) < 1 or not web3.Web3.isAddress(args[0])):
+        wallet_addr = bytes.fromhex(args[0][2:])
     start_server = websockets.serve(hello, "localhost", proxy_port)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()

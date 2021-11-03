@@ -39,7 +39,9 @@ const networkFilters = {
     "https://www.coinbase.com/api/v2/user?",
     "https://onlinebanking.mtb.com/Accounts/FetchAccountSummary*",
     "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
-    "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list"
+    "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list",
+    "https://api.spotify.com/v1/playlists/*",
+    "https://secure.ssa.gov/OSSS/xml/downloadXML.action"
   ]
 };
 
