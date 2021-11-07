@@ -10,7 +10,7 @@ service towncrier {
 }
 
 message Data {
-    uint32 study = 1;
+    uint32 source = 1;
     bytes addr = 2;
     string data = 3;
 }
