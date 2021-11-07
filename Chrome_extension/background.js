@@ -36,7 +36,7 @@ const addr = 'ws://localhost:9001'
 const tabStorage = {};
 const networkFilters = {
   urls: [
-    "https://www.coinbase.com/api/v2/user?",
+    "https://accounts.coinbase.com/api/v1/user",
     "https://onlinebanking.mtb.com/Accounts/FetchAccountSummary*",
     "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
     "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list",

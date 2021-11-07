@@ -17,35 +17,46 @@ import web3
 import subprocess
 command = './hybrid-enc/henc'
 sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
-
 sgx_server = '128.84.84.208:12345'
 proxy_port = 9001
 
-sgx_pubkey = base64.b64decode('BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=')
 wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
+
+
+source_dict = {
+    "https://secure.ssa.gov/OSSS/xml/down": 0,
+    "https://accounts.coinbase.com/api/v1": 1,
+    "https://onlinebanking.mtb.com/Accoun": 2,
+    "https://secure01b.chase.com/svc/rr/p": 3,
+    "https://api.spotify.com/v1/playlists": 4,
+    "https://otc.tax.ny.gov/webapp/wcs/st": 5,
+}
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
     print("Encrypted header: ", output[8:-1])
     return output[8:-1]
 
-def rpc_call(data):
+def rpc_call(source, data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
     stub = tc_pb2_grpc.towncrierStub(channel)
-    message = tc_pb2.Data(study = 0, addr = wallet_addr, data = data)
+    message = tc_pb2.Data(source = source, addr = wallet_addr, data = data)
     res = stub.participate(message)
 
 
-async def hello(websocket, path):
+async def request(websocket, path):
     data = await websocket.recv()
-    print("HTTP header: ", data)
-    rpc_call(encrypt(data))
+    source = source_dict[data[:36]]
+    print("Data source:", source)
+    print("HTTP header:", data)
+    rpc_call(source, encrypt(data))
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if not (len(args) < 1 or not web3.Web3.isAddress(args[0])):
+    if len(args) >= 1 and web3.Web3.isAddress(args[0]):
         wallet_addr = bytes.fromhex(args[0][2:])
-    start_server = websockets.serve(hello, "localhost", proxy_port)
+
+    start_server = websockets.serve(request, "localhost", proxy_port)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
