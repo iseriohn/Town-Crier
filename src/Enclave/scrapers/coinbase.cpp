@@ -62,27 +62,6 @@
 
 using std::string;
 
-static double manual_parse_response(const char *resp) {
-  double ret = 0;
-  const char *end;
-  const char *temp = resp;
-
-  std::string buf_string(resp);
-  std::size_t pos = buf_string.find("price_usd\": \"");
-
-  if (pos == std::string::npos) {
-    return 0.0;
-  }
-  temp += (pos + 13);
-  end = temp;
-  while (*end != '"') {
-    end += 1;
-  }
-
-  ret = std::strtod(temp, NULL);
-  return ret;
-}
-
 err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, char *resp_data) {
   char* loc = strstr((char*)data, (char*)"\n");
   int pos = loc - (char*)data;
@@ -145,24 +124,34 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
     return WEB_ERROR;
   }
 
-  string user_id = "";
-  if (!response_struct.contains("data")) {
-          return NO_ERROR;
-  }
-  picojson::value response_ex_struct = response_struct.get("data").get("id");
+  string name = "";
+  picojson::value response_ex_struct = response_struct.get("first_name");
   if (response_ex_struct.is<string>()) {
-    user_id = (string)response_ex_struct.get<string>();
-  }
-  string email = "";
-  response_ex_struct = response_struct.get("data").get("email");
+    name = (string)response_ex_struct.get<string>();
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("last_name");
   if (response_ex_struct.is<string>()) {
-    email = (string)response_ex_struct.get<string>();
-  }
-  string residence = "";
-  response_ex_struct = response_struct.get("data").get("state");
-  if (response_ex_struct.is<string>()) {
-    residence = (string)response_ex_struct.get<string>();
-  }
+    name = name + " " + (string)response_ex_struct.get<string>();
+  } else return INVALID_PARAMS;
+  std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+  
+  string dob = "";
+  response_ex_struct = response_struct.get("dob_year");
+  if (response_ex_struct.is<int64_t>()) {
+    dob = std::to_string(response_ex_struct.get<int64_t>());
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("dob_month");
+  LL_DEBUG("noooooo");
+  if (response_ex_struct.is<int64_t>()) {
+    string month = std::to_string(response_ex_struct.get<int64_t>());
+    dob = dob + "-" + std::string(2 - month.length(), '0') + month;
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("dob_day");
+  LL_DEBUG("noooooo");
+  if (response_ex_struct.is<int64_t>()) {
+    string day = std::to_string(response_ex_struct.get<int64_t>());
+    dob = dob + "-" + std::string(2 - day.length(), '0') + day;
+  } else return INVALID_PARAMS;
   
   name = dob + name;
   name.copy(resp_data, name.size());
