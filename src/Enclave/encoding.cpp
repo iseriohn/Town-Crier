@@ -159,3 +159,23 @@ std::vector<uint8_t> itob(uint64_t num, size_t width) {
 
   return out;
 }
+
+string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
+    if(charArray == nullptr) {
+        return "nullptr";
+    }
+
+    if(charArrayLength > 65536) {
+        return "charArrayLength overflow";
+    }
+
+    constexpr char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    std::string s(charArrayLength * 2, ' ');
+    for (int i = 0; i < charArrayLength; ++i) {
+        s[2 * i] = hexmap[(charArray[i] & 0xF0) >> 4];
+        s[2 * i + 1] = hexmap[charArray[i] & 0x0F];
+    }
+    return s;
+} 

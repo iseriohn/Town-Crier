@@ -62,10 +62,11 @@
 #define TYPE_ENCRYPT_TEST   0x8
 #define TYPE_WOLFRAM		0x9
 
-#define TYPE_FLIGHT_INS_ENC	0x10
-#define TYPE_STEAM_EX       0x11
+#define TYPE_FLIGHT_INS_ENC	0xA
+#define TYPE_STEAM_EX       0xB
 
-#define TYPE_GMAIL          0x12
+#define TYPE_SSA            0xC
+#define TYPE_COINBASE       0xD
 
 /* Possible return values to be used in Enclave-Relay Connections */
 #define TC_SUCCESS          0x0

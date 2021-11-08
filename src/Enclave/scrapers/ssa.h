@@ -41,9 +41,9 @@
 
 #include "Scraper.h"
 
-class SSA : Scraper {
+class SSAScraper : Scraper {
  public:
-  err_code handle(const uint8_t *req, size_t len, int *resp_data) final;
+  err_code handle_long_resp(const char *data, size_t len, char *resp_data) final;
  private:
 };
 

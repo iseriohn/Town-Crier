@@ -49,7 +49,7 @@
 
 #include <debug.h>
 #include "tls_client.h"
-#include "scrapers/scraper_utils.h"
+#include "encoding.h"
 #include "../log.h"
 #include "commons.h"
 #include "hybrid_cipher.h"

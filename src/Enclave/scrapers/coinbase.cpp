@@ -56,7 +56,6 @@
 #include "Constants.h"
 #include "log.h"
 #include "error_codes.h"
-#include "scraper_utils.h"
 
 #include "external/slre.h"
 #include "external/picojson.h"
@@ -82,34 +81,5 @@ static double manual_parse_response(const char *resp) {
 
   ret = std::strtod(temp, NULL);
   return ret;
-}
-
-/* Data is structure as follows,
- * 0x00 - 0x20  null-terminated string for asset id (https://api.coinmarketcap.com/v1/ticker/)
- */
-err_code Coinbase::handle(const uint8_t *req, size_t data_len, int *resp_data) {
-  if (data_len != 32) {
-    LL_CRITICAL("data_len %zu*32 is not 32", data_len / 32);
-    return INVALID_PARAMS;
-  }
-
-  string coin_id(string(req, req + 0x20).c_str());
-
-  try {
-    int price = 0;
-    *resp_data = price;
-
-    return NO_ERROR;
-  }
-  catch (const std::invalid_argument &e) {
-    return INVALID_PARAMS;
-  }
-  catch (const std::exception &e) {
-    LL_CRITICAL("https error: %s", e.what());
-    return WEB_ERROR;
-  }
-  catch (...) {
-    return INVALID_PARAMS;
-  }
 }
 

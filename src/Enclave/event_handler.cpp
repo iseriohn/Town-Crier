@@ -66,6 +66,7 @@
 #include "Constants.h"
 #include "time.h"
 #include "log.h"
+#include "encoding.h"
 
 #include "hybrid_cipher.h"
 #include "env.h"
@@ -85,112 +86,36 @@ int identity_token(uint32_t source,
                    uint8_t* addr, 
                    unsigned char* sealed_data, 
                    size_t sealed_data_len) {
-    string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
-  //LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
-  LL_INFO("New query received.");
-  LL_INFO("Encrypted HTTP request header: %s", sealed_data);
+  string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
+  LL_INFO("New query received (wallet address: 0x%s).", wallet.c_str());
+  LL_DEBUG("Encrypted HTTP request header: %s", sealed_data);
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();
   LL_INFO("Sealed HTTP header decrypted.");
   LL_DEBUG("Decrypted HTTP header: %s", data);
-  
-  char* loc = strstr((char*)data, (char*)"\n");
-  int pos = loc - (char*)data;
-  char url[256];
-  const int offset = 22; // SSA
-  //const int offset = 29; // coinbase
-  //const int offset = 0; // spotify
-  strncpy(url, (char*)data + offset, pos - offset);
-  url[pos - offset] = 0;
-  data = data + pos + 1;
-  data_len -= pos + 1;
-  std::vector<string> header;
-  loc = strstr((char*)data, "\n");
-  while (loc!= NULL) {
-    pos = loc - (char*)data;
-    char tmp[1000000];
-    strncpy(tmp, (char*)data, pos);
-    tmp[pos] = 0;
-    if (pos > 0) header.push_back(string(tmp));
-    data = data + pos + 1;
-    data_len -= pos + 1;
-    loc = strstr((char*)data, "\n");
-  }
-  if (data_len > 0) {
-      header.push_back(string((char*)data));
-  }
-  LL_DEBUG("url: %s", url);
-
-  const string mtb = "onlinebanking.mtb.com";
-  const string coinbase = "accounts.coinbase.com";
-  const string tax = "otc.tax.ny.gov";
-  const string chase = "secure01b.chase.com";
-  const string spotify = "api.spotify.com";
-  const string ssa = "secure.ssa.gov";
-
-  HttpRequest httpRequest(ssa, url, header, true);
-  HttpsClient httpClient(httpRequest);
-
-  string api_response;
-  try {
-    HttpResponse response = httpClient.getResponse();
-    api_response = response.getContent();
-  } catch (const std::runtime_error &e) {
-    LL_CRITICAL("%s", e.what());
-    httpClient.close();
-    return HTTP_ERROR;
-  }
  
-  LL_INFO("HTTP response received.");
-  LL_DEBUG("HTTP response: %s", api_response.c_str());
-  if (api_response.empty()) {
-    LL_CRITICAL("api return empty");
-    return HTTP_ERROR;
-  }
-
-
-  /*
-  
-  picojson::value response_struct;
-  string err = picojson::parse(response_struct, api_response);
-  
-  if (!err.empty() || !response_struct.is<picojson::object>()) {
-    LL_CRITICAL("can't parse %s", api_response.c_str());
-    return HTTP_ERROR;
-  }
-  if (response_struct.contains("error")) {
-    if (response_struct.get("error").is<string>()) {
-      err = response_struct.get("error").get<string>();
+  switch (source) {
+    case TYPE_SSA: {
+      SSAScraper scraper;
+      char *resp;
+      switch (scraper.handle_long_resp(data, data_len, resp)) {
+        case UNKNOWN_ERROR:
+        case WEB_ERROR:
+          return TC_INTERNAL_ERROR;
+          break;
+        case INVALID_PARAMS:
+          return TC_INPUT_ERROR;
+          break;
+        case NO_ERROR:
+          break;
+        };
+      break;
     }
-
-    LL_CRITICAL("%s", err.c_str());
-    return HTTP_ERROR;
   }
-
-  string user_id = "";
-  if (!response_struct.contains("data")) {
-          return 0;
-  }
-  picojson::value response_ex_struct = response_struct.get("data").get("id");
-  if (response_ex_struct.is<string>()) {
-    user_id = (string)response_ex_struct.get<string>();
-  }
-  string email = "";
-  response_ex_struct = response_struct.get("data").get("email");
-  if (response_ex_struct.is<string>()) {
-    email = (string)response_ex_struct.get<string>();
-  }
-  string residence = "";
-  response_ex_struct = response_struct.get("data").get("state");
-  if (response_ex_struct.is<string>()) {
-    residence = (string)response_ex_struct.get<string>();
-  }
-  LL_INFO("New participant's data collected from Coinbase parsed",
-          study);
-  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
-          user_id.c_str(), email.c_str(), residence.c_str());
-*/
+  
+  int identity_index;
+  
   try {
     //return form_transaction(0, );
   }

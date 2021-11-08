@@ -173,4 +173,5 @@ class bytes32 : public bytes {
 uint8_t get_n_th_byte(uint64_t in, int n);
 int append_as_uint256(bytes &out, uint64_t in, int len);
 uint8_t bytesRequired(uint64_t _i);
+string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength);
 #endif //TOWN_CRIER_ENCODING_H

@@ -56,6 +56,5 @@ using namespace std;
 
 string url_encode(const char *str);
 string url_decode(const char *str);
-string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength); 
 
 #endif  // SRC_ENCLAVE_SCRAPERS_SCRAPER_UTILS_H_

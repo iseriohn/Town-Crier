@@ -52,7 +52,12 @@
 
 class Scraper {
  public:
-  virtual err_code handle(const uint8_t *req, size_t data_len, int *resp_data) = 0;
+  virtual err_code handle(const uint8_t *req, size_t data_len, int *resp_data) {
+    return NO_ERROR;
+  }
+  virtual err_code handle_long_resp(const char *data, size_t data_len, char *resp_data) {
+    return NO_ERROR;
+  }
 };
 
 class CannotParseResponse : public std::exception {
