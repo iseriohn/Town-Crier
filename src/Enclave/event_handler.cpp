@@ -97,7 +97,7 @@ int identity_token(uint32_t source,
   switch (source) {
     case TYPE_SSA: {
       SSAScraper scraper;
-      char *resp;
+      char resp[500] = {0};
       switch (scraper.handle_long_resp(data, data_len, resp)) {
         case UNKNOWN_ERROR:
           return TC_UNKNOWN_ERROR;
@@ -106,13 +106,14 @@ int identity_token(uint32_t source,
         case INVALID_PARAMS:
           return TC_INPUT_ERROR;
         case NO_ERROR:
+          LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
           break;
       }
       break;
     }
     case TYPE_COINBASE: {
       CoinbaseScraper scraper;
-      char *resp;
+      char resp[500];
       switch (scraper.handle_long_resp(data, data_len, resp)) {
         case UNKNOWN_ERROR:
           return TC_UNKNOWN_ERROR;

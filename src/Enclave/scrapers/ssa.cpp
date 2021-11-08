@@ -45,7 +45,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <cstring>
 #include <iostream>
 
@@ -61,27 +60,6 @@
 #include "external/picojson.h"
 
 using std::string;
-
-static double manual_parse_response(const char *resp) {
-  double ret = 0;
-  const char *end;
-  const char *temp = resp;
-
-  std::string buf_string(resp);
-  std::size_t pos = buf_string.find("price_usd\": \"");
-
-  if (pos == std::string::npos) {
-    return 0.0;
-  }
-  temp += (pos + 13);
-  end = temp;
-  while (*end != '"') {
-    end += 1;
-  }
-
-  ret = std::strtod(temp, NULL);
-  return ret;
-}
 
 err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *resp_data) {
   char* loc = strstr((char*)data, (char*)"\n");
@@ -127,11 +105,12 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
   if (found_name == std::string::npos || found_dob == std::string::npos) {
     return INVALID_PARAMS;
   }
-    found_name += strlen("<osss:Name>");
-    string name = api_response.substr(found_name, api_response.find("</osss:Name>") - found_name);
-    found_dob += strlen("<osss:DateOfBirth>");
-    string dob = api_response.substr(found_dob, api_response.find("</osss:DateOfBirth>") - found_dob);
+  found_name += strlen("<osss:Name>");
+  string name = api_response.substr(found_name, api_response.find("</osss:Name>") - found_name);
+  found_dob += strlen("<osss:DateOfBirth>");
+  string dob = api_response.substr(found_dob, api_response.find("</osss:DateOfBirth>") - found_dob);
 
-    LL_INFO("[DEMO ONLY, TO BE SEALED] (name: %s; dob: %s)", name.c_str(), dob.c_str());
+  name = dob + name;
+  name.copy(resp_data, name.size());
   return NO_ERROR;
 }

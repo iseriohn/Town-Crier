@@ -163,7 +163,8 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
   if (response_ex_struct.is<string>()) {
     residence = (string)response_ex_struct.get<string>();
   }
-  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
-          user_id.c_str(), email.c_str(), residence.c_str());
+  
+  name = dob + name;
+  name.copy(resp_data, name.size());
   return NO_ERROR;
 }
