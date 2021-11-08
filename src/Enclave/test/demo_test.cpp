@@ -43,75 +43,39 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
+#include <string.h>
+#include <cstring>
 #include <iostream>
 
 #include <debug.h>
 #include "tls_client.h"
-#include "scrapers/spotify.h"
+#include "scrapers/scraper_utils.h"
 #include "../log.h"
 #include "commons.h"
 #include "hybrid_cipher.h"
+#include "scrapers/error_codes.h"
+#include "Constants.h"
 
 #include "external/slre.h"
 #include "external/picojson.h"
-
-string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
-    if(charArray == nullptr) {
-        return "nullptr";
-    }
-
-    if(charArrayLength > 65536) {
-        return "charArrayLength overflow";
-    }
-
-    constexpr char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7',
-        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    std::string s(charArrayLength * 2, ' ');
-    for (int i = 0; i < charArrayLength; ++i) {
-        s[2 * i] = hexmap[(charArray[i] & 0xF0) >> 4];
-        s[2 * i + 1] = hexmap[charArray[i] & 0x0F];
-    }
-    return s;
-} 
 
 int demo_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
     string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
   //LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
   LL_INFO("New query received.");
+  LL_INFO("Encrypted HTTP request header: %s", sealed_data);
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();
-  LL_INFO("Sealed http header decrypted.");
-/*
-  // Build header for https request
-  char* loc = strstr((char*)data, (char*)"Host:");
-  int pos = loc - (char*)data;
-  char url[256];
-  strncpy(url, (char*)data + 4, pos - 5);
-  url[pos - 5] = 0;
-
-  data = data + pos;
-  data_len -= pos;
-  std::vector<string> header;
-  loc = strstr((char*)data, "\n");
-  while (loc!= NULL) {
-    pos = loc - (char*)data;
-    char tmp[1000000];
-    strncpy(tmp, (char*)data, pos);
-    tmp[pos] = 0;
-    if (pos > 0) header.push_back(string(tmp));
-    data = data + pos + 1;
-    data_len -= pos + 1;
-    loc = strstr((char*)data, "\n");
-  }
-  if (data_len > 0) header.push_back(string((char*)data));
-*/
+  LL_INFO("Sealed HTTP header decrypted.");
+  LL_DEBUG("Decrypted HTTP header: %s", data);
+  
   char* loc = strstr((char*)data, (char*)"\n");
   int pos = loc - (char*)data;
   char url[256];
-  const int offset = 0;
+  const int offset = 22; // SSA
+  //const int offset = 29; // coinbase
+  //const int offset = 0; // spotify
   strncpy(url, (char*)data + offset, pos - offset);
   url[pos - offset] = 0;
   data = data + pos + 1;
@@ -131,13 +95,16 @@ int demo_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, si
   if (data_len > 0) {
       header.push_back(string((char*)data));
   }
+  LL_DEBUG("url: %s", url);
 
   const string mtb = "onlinebanking.mtb.com";
-  const string coinbase = "www.coinbase.com";
+  const string coinbase = "accounts.coinbase.com";
   const string tax = "otc.tax.ny.gov";
   const string chase = "secure01b.chase.com";
   const string spotify = "api.spotify.com";
-  HttpRequest httpRequest(spotify, url, header, true);
+  const string ssa = "secure.ssa.gov";
+
+  HttpRequest httpRequest(ssa, url, header, true);
   HttpsClient httpClient(httpRequest);
 
   string api_response;
@@ -147,75 +114,24 @@ int demo_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, si
   } catch (const std::runtime_error &e) {
     LL_CRITICAL("%s", e.what());
     httpClient.close();
-    return HTTP_ERROR;
+    return WEB_ERROR;
   }
  
-  LL_CRITICAL("HTTP response: %s", api_response.c_str());
+  LL_INFO("HTTP response received.");
+  LL_DEBUG("HTTP response: %s", api_response.c_str());
   if (api_response.empty()) {
     LL_CRITICAL("api return empty");
-    return HTTP_ERROR;
-  }
-  picojson::value response_struct;
-  string err = picojson::parse(response_struct, api_response);
-  
-  if (!err.empty() || !response_struct.is<picojson::object>()) {
-    LL_CRITICAL("can't parse %s", api_response.c_str());
-    return HTTP_ERROR;
-  }
-  if (response_struct.contains("error")) {
-    if (response_struct.get("error").is<string>()) {
-      err = response_struct.get("error").get<string>();
-    }
-
-    LL_CRITICAL("%s", err.c_str());
-    return HTTP_ERROR;
+    return WEB_ERROR;
   }
 
-  string user_id = "";
-  if (!response_struct.contains("data")) {
-          return 0;
-  }
-  picojson::value response_ex_struct = response_struct.get("data").get("id");
-  if (response_ex_struct.is<string>()) {
-    user_id = (string)response_ex_struct.get<string>();
-  }
-  string email = "";
-  response_ex_struct = response_struct.get("data").get("email");
-  if (response_ex_struct.is<string>()) {
-    email = (string)response_ex_struct.get<string>();
-  }
-  string residence = "";
-  response_ex_struct = response_struct.get("data").get("state");
-  if (response_ex_struct.is<string>()) {
-    residence = (string)response_ex_struct.get<string>();
-  }
-
-/*
-  if (response_ex_struct.is<picojson::array>()) {
-    picojson::value _flight = flight_ex_struct.get<picojson::array>()[0];
-    if (_flight.get("actualdeparturetime").is<double>()) {
-      actual_depart_time = (uint64_t) _flight.get("actualdeparturetime").get<double>();
-    } else {
-      // actualdepartime is not double
-      return HTTP_ERROR;
-    }
-  } else {
-    LL_CRITICAL("no flight info found");
-    return NOT_FOUND;
-  }
-*/ 
-  LL_INFO("Study #%d: data collected from Coinbase for participant with wallet 0x%s",
-          study, wallet.c_str());
-  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
-          user_id.c_str(), email.c_str(), residence.c_str());
   try {
     //return form_transaction(0, );
   }
   catch (const std::exception &e) {
     LL_CRITICAL("%s", e.what());
-    return INTERNAL_ERR;
+    return UNKNOWN_ERROR;
   }
     
-  return 0;
+  return NO_ERROR;
 }
 

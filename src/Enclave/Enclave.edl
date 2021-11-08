@@ -8,6 +8,11 @@ enclave {
     include "sgx_tseal.h"
 
     trusted {
+        public int identity_token(
+                uint32_t source,
+                [user_check] uint8_t* addr,
+                [user_check] unsigned char* data, size_t data_len);
+        
         public int handle_request(
                    int nonce,
                    uint64_t id, uint64_t type,
