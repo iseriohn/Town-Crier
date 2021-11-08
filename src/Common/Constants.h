@@ -71,6 +71,7 @@
 /* Possible return values to be used in Enclave-Relay Connections */
 #define TC_SUCCESS          0x0
 #define TC_INPUT_ERROR      0x1
+#define TC_UNKNOWN_ERROR    0x2
 #define TC_INTERNAL_ERROR   0x3
 #define TC_INTERNAL_TEST    0x99  // reserved for internal test
 

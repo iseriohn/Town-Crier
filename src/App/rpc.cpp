@@ -55,7 +55,7 @@
     auto source = request->source();
     auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
     auto req_data = request->data();
-    auto st = demo_self_test(eid,
+    auto st = identity_token(eid,
                              &ecall_ret,
                              source,
                              addr,

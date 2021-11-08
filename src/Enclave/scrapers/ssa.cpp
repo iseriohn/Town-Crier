@@ -88,8 +88,6 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
   int pos = loc - (char*)data;
   char url[256];
   const int offset = 22; // SSA
-  //const int offset = 29; // coinbase
-  //const int offset = 0; // spotify
   strncpy(url, (char*)data + offset, pos - offset);
   url[pos - offset] = 0;
   data = data + pos + 1;
@@ -111,12 +109,6 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
   }
   LL_DEBUG("url: %s", url);
 
-  const string mtb = "onlinebanking.mtb.com";
-  const string coinbase = "accounts.coinbase.com";
-  const string tax = "otc.tax.ny.gov";
-  const string chase = "secure01b.chase.com";
-  const string spotify = "api.spotify.com";
-
   HttpRequest httpRequest("secure.ssa.gov", url, header, true);
   HttpsClient httpClient(httpRequest);
 
@@ -130,50 +122,16 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
     return WEB_ERROR;
   }
  
-  LL_INFO("HTTP response received.");
-  LL_DEBUG("HTTP response: %s", api_response.c_str());
-  if (api_response.empty()) {
-    LL_CRITICAL("api return empty");
-    return WEB_ERROR;
+  auto found_name = api_response.find("<osss:Name>");
+  auto found_dob = api_response.find("<osss:DateOfBirth>");
+  if (found_name == std::string::npos || found_dob == std::string::npos) {
+    return INVALID_PARAMS;
   }
+    found_name += strlen("<osss:Name>");
+    string name = api_response.substr(found_name, api_response.find("</osss:Name>") - found_name);
+    found_dob += strlen("<osss:DateOfBirth>");
+    string dob = api_response.substr(found_dob, api_response.find("</osss:DateOfBirth>") - found_dob);
 
-
-  
-  picojson::value response_struct;
-  string err = picojson::parse(response_struct, api_response);
-  
-  if (!err.empty() || !response_struct.is<picojson::object>()) {
-    LL_CRITICAL("can't parse %s", api_response.c_str());
-    return WEB_ERROR;
-  }
-  if (response_struct.contains("error")) {
-    if (response_struct.get("error").is<string>()) {
-      err = response_struct.get("error").get<string>();
-    }
-
-    LL_CRITICAL("%s", err.c_str());
-    return WEB_ERROR;
-  }
-
-  string user_id = "";
-  if (!response_struct.contains("data")) {
-          return NO_ERROR;
-  }
-  picojson::value response_ex_struct = response_struct.get("data").get("id");
-  if (response_ex_struct.is<string>()) {
-    user_id = (string)response_ex_struct.get<string>();
-  }
-  string email = "";
-  response_ex_struct = response_struct.get("data").get("email");
-  if (response_ex_struct.is<string>()) {
-    email = (string)response_ex_struct.get<string>();
-  }
-  string residence = "";
-  response_ex_struct = response_struct.get("data").get("state");
-  if (response_ex_struct.is<string>()) {
-    residence = (string)response_ex_struct.get<string>();
-  }
-  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
-          user_id.c_str(), email.c_str(), residence.c_str());
+    LL_INFO("[DEMO ONLY, TO BE SEALED] (name: %s; dob: %s)", name.c_str(), dob.c_str());
   return NO_ERROR;
 }

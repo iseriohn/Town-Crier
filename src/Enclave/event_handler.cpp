@@ -87,8 +87,7 @@ int identity_token(uint32_t source,
                    unsigned char* sealed_data, 
                    size_t sealed_data_len) {
   string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
-  LL_INFO("New query received (wallet address: 0x%s).", wallet.c_str());
-  LL_DEBUG("Encrypted HTTP request header: %s", sealed_data);
+  LL_INFO("New query received (wallet address: 0x%s, data source: #%d).", wallet.c_str(), TYPE_SSA);
   string plain = decrypt_query(sealed_data, sealed_data_len);
   auto data = plain.c_str();
   auto data_len = plain.size();
@@ -101,15 +100,29 @@ int identity_token(uint32_t source,
       char *resp;
       switch (scraper.handle_long_resp(data, data_len, resp)) {
         case UNKNOWN_ERROR:
+          return TC_UNKNOWN_ERROR;
         case WEB_ERROR:
           return TC_INTERNAL_ERROR;
-          break;
         case INVALID_PARAMS:
           return TC_INPUT_ERROR;
-          break;
         case NO_ERROR:
           break;
-        };
+      }
+      break;
+    }
+    case TYPE_COINBASE: {
+      CoinbaseScraper scraper;
+      char *resp;
+      switch (scraper.handle_long_resp(data, data_len, resp)) {
+        case UNKNOWN_ERROR:
+          return TC_UNKNOWN_ERROR;
+        case WEB_ERROR:
+          return TC_INTERNAL_ERROR;
+        case INVALID_PARAMS:
+          return TC_INPUT_ERROR;
+        case NO_ERROR:
+          break;
+      }
       break;
     }
   }

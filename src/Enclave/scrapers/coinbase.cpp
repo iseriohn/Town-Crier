@@ -83,3 +83,87 @@ static double manual_parse_response(const char *resp) {
   return ret;
 }
 
+err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, char *resp_data) {
+  char* loc = strstr((char*)data, (char*)"\n");
+  int pos = loc - (char*)data;
+  char url[256];
+  const int offset = 29; // coinbase
+  strncpy(url, (char*)data + offset, pos - offset);
+  url[pos - offset] = 0;
+  data = data + pos + 1;
+  data_len -= pos + 1;
+  std::vector<string> header;
+  loc = strstr((char*)data, "\n");
+  while (loc!= NULL) {
+    pos = loc - (char*)data;
+    char tmp[1000000];
+    strncpy(tmp, (char*)data, pos);
+    tmp[pos] = 0;
+    if (pos > 0) header.push_back(string(tmp));
+    data = data + pos + 1;
+    data_len -= pos + 1;
+    loc = strstr((char*)data, "\n");
+  }
+  if (data_len > 0) {
+      header.push_back(string((char*)data));
+  }
+  LL_DEBUG("url: %s", url);
+
+  HttpRequest httpRequest("accounts.coinbase.com", url, header, true);
+  HttpsClient httpClient(httpRequest);
+
+  string api_response;
+  try {
+    HttpResponse response = httpClient.getResponse();
+    api_response = response.getContent();
+  } catch (const std::runtime_error &e) {
+    LL_CRITICAL("%s", e.what());
+    httpClient.close();
+    return WEB_ERROR;
+  }
+ 
+  LL_INFO("HTTP response received.");
+  LL_DEBUG("HTTP response: %s", api_response.c_str());
+  if (api_response.empty()) {
+    LL_CRITICAL("api return empty");
+    return WEB_ERROR;
+  }
+
+  picojson::value response_struct;
+  string err = picojson::parse(response_struct, api_response);
+  
+  if (!err.empty() || !response_struct.is<picojson::object>()) {
+    LL_CRITICAL("can't parse %s", api_response.c_str());
+    return WEB_ERROR;
+  }
+  if (response_struct.contains("error")) {
+    if (response_struct.get("error").is<string>()) {
+      err = response_struct.get("error").get<string>();
+    }
+
+    LL_CRITICAL("%s", err.c_str());
+    return WEB_ERROR;
+  }
+
+  string user_id = "";
+  if (!response_struct.contains("data")) {
+          return NO_ERROR;
+  }
+  picojson::value response_ex_struct = response_struct.get("data").get("id");
+  if (response_ex_struct.is<string>()) {
+    user_id = (string)response_ex_struct.get<string>();
+  }
+  string email = "";
+  response_ex_struct = response_struct.get("data").get("email");
+  if (response_ex_struct.is<string>()) {
+    email = (string)response_ex_struct.get<string>();
+  }
+  string residence = "";
+  response_ex_struct = response_struct.get("data").get("state");
+  if (response_ex_struct.is<string>()) {
+    residence = (string)response_ex_struct.get<string>();
+  }
+  LL_INFO("[DEMO ONLY, TO BE SEALED] (user_id: %s; email: %s; residence state: %s)", 
+          user_id.c_str(), email.c_str(), residence.c_str());
+  return NO_ERROR;
+}
