@@ -1,0 +1,37 @@
+{
+  "alloc": {
+    "0x710e69fe188d2ff79f616f0e06eb7eb852eed7c7": {
+        "balance": "16069380442589902755419620902993782792835301376"
+    },
+	  "0xa39871ab5277194e76a944f864a73ee40ed07279": {
+        "balance": "16069380442589902755419620902993782792835301376"
+    },
+		"0x89B44E4D3C81EDE05D0F5DE8D1A68F754D73D997": {
+        "balance": "16069380442589902755419620902993782792835301376"
+    }
+  },
+  "config": {
+    "chainId": 23,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
+    "eip155Block": 0,
+    "eip158Block": 0,
+    "byzantiumBlock": 0,
+    "constantinopleBlock": 0,
+    "petersburgBlock": 0,
+    "ethash": {}
+  },
+  "clique": {    
+    "period": 10,    
+    "epoch": 30000    
+  },
+  "nonce": "0x000000000000002a",
+  "difficulty": "0x020000",
+  "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "coinbase": "0xa39871ab5277194e76a944f864a73ee40ed07279",
+  "timestamp": "0x00",
+  "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "extraData": "0x",
+  "gasLimit": "0x2fefd80000"
+}
+

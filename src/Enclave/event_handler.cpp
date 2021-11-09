@@ -159,7 +159,7 @@ int identity_token(uint32_t source,
   LL_DEBUG("Encrypted identity in dataset (%d bytes): %s", *newdata_len, newdata);
 
   try {
-    //return form_transaction(0, );
+    return form_transaction(0, );
   }
   catch (const std::exception &e) {
     LL_CRITICAL("%s", e.what());

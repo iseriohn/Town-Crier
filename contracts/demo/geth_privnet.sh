@@ -12,13 +12,21 @@ $GETH --datadir=$DATADIR \
   --identity="00" \
   --networkid=$NETWORKID \
   --port=$LISTEN_PORT \
-  --rpc \
-  --rpcaddr=$RPC_ADDR \
-  --rpcport=$RPC_PORT \
-  --rpccorsdomain='*' \
   --verbosity=$VERBOSITY \
   --nodiscover \
-  --rpcapi="db,eth,ne,web3,personal,crypto-js" \
   --ipcpath=$IPC_PATH \
+  --ws \
+  --ws.addr=$WS_ADDR \
+  --ws.port=$WS_PORT \
+  --ws.api="db,eth,ne,web3,personal,crypto-js" \
+  --http \
+  --http.addr=$HTTP_ADDR \
+  --http.port=$HTTP_PORT \
+  --http.api="admin,debug,web3,eth,txpool,personal,miner,net,crypto-js" \
+  --http.vhosts '*' \
+  --http.corsdomain '*' \
+  --allow-insecure-unlock \
   --keystore=$KEY_STORE \
-  console 
+  --vmdebug \
+  --dev \
+  console

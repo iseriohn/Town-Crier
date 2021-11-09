@@ -5,10 +5,12 @@ export GETH=geth
 export MIST=~/bin/mist/mist
 
 # geth configuration
-export NETWORKID=93819023
+export NETWORKID=23
 export LISTEN_PORT=30000
-export RPC_PORT=8200
-export RPC_ADDR=127.0.0.1
+export WS_PORT=8646
+export WS_ADDR=127.0.0.1
+export HTTP_PORT=8646
+export HTTP_ADDR=127.0.0.1
 
 export IPC_PATH=~/.ethereum/geth.ipc
 export DATADIR=chain0

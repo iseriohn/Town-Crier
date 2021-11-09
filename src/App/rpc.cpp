@@ -57,7 +57,6 @@ using namespace std;
 int ecall_ret = TC_SUCCESS;
 
   try {
-    this->logger->info("Retrieve sealed dataset from " + config->getDatasetPath());
     ifstream dataset;
     dataset.open(config->getDatasetPath());
     string file = "";
@@ -68,7 +67,6 @@ int ecall_ret = TC_SUCCESS;
       }
       dataset.close();
     }
-    this->logger->debug("Dataset: " + file);
    
     auto source = request->source();
     auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
