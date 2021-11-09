@@ -76,19 +76,22 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
+tc::Config *config;
+
 int main(int argc, const char *argv[])
 {
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF_FILE);
   log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tc.cpp"));
 
-  tc::Config config(argc, argv);
-  LL_INFO("config:\n%s", config.toString().c_str());
+  tc::Config conFig(argc, argv);
+  config = &conFig;
+  LL_INFO("config:\n%s", config->toString().c_str());
 
   int ret;
   sgx_enclave_id_t eid;
   sgx_status_t st;
 
-  ret = initialize_enclave(config.getEnclavePath().c_str(), &eid);
+  ret = initialize_enclave(config->getEnclavePath().c_str(), &eid);
   if (ret != 0) {
     LL_CRITICAL("Failed to initialize the enclave");
     std::exit(-1);
@@ -97,7 +100,7 @@ int main(int argc, const char *argv[])
   }
 
     // print MR and exit if requested
-    if (config.getIsPrintMR()) {
+    if (config->getIsPrintMR()) {
       cout << get_mr_enclave(eid) << endl;
     std::exit(0);
   }
@@ -107,15 +110,15 @@ int main(int argc, const char *argv[])
   try {
     // load the wallet key --- the ECDSA key used to sign transactions
     wallet_address =
-        unseal_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
-    provision_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
+        unseal_key(eid, config->getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
+    provision_key(eid, config->getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
     LL_INFO("using wallet address at %s", wallet_address.c_str());
 
     // load the encryption key --- the key under which inputs are encrypted
     hybrid_pubkey = unseal_key(
-        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
+        eid, config->getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
     provision_key(
-        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
+        eid, config->getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
     LL_INFO("using hybrid pubkey: %s", hybrid_pubkey.c_str());
   } catch (const tc::EcallException &e) {
     LL_CRITICAL("%s", e.what());
@@ -126,7 +129,7 @@ int main(int argc, const char *argv[])
   }
 
   // initialize the enclave environment variables
-  st = init_enclave_kv_store(eid, config.getTcEthereumAddress().c_str());
+  st = init_enclave_kv_store(eid, config->getTcEthereumAddress().c_str());
   if (st != SGX_SUCCESS) {
     LL_CRITICAL("cannot initialize enclave env");
     exit(-1);
@@ -141,7 +144,7 @@ string query = "BBtE3OGlM7D+Y3Ckm/YYH9/7h+soed/AQKuyAVTildlvjUt7E6uF1rVh4JcGhePo
   // starting the backend RPC server
   RpcServer tc_service(eid);
   std::string server_address("0.0.0.0:" +
-                             std::to_string(config.getRelayRPCAccessPoint()));
+                             std::to_string(config->getRelayRPCAccessPoint()));
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&tc_service);

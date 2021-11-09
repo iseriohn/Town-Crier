@@ -68,6 +68,7 @@ class Config {
   const string &getSealedHybridKey() const;
   const string &getEnclavePath() const;
   const string &getTcEthereumAddress() const;
+  const string &getDatasetPath() const;
   bool getIsPrintMR() const;
 
  private:
@@ -78,6 +79,7 @@ class Config {
   string sealedECDSAKey;
   string sealedHybridEncryptionkey;
   string enclavePath;
+  string datasetPath;
 
   void parseConfigFile();
 
@@ -87,5 +89,7 @@ class Config {
 };
 
 }  // namespace tc
+
+extern tc::Config *config;
 
 #endif  // SRC_APP_CONFIG_H_

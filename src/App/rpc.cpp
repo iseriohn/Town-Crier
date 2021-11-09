@@ -4,6 +4,7 @@
 
 #include "Common/external/base64.hxx"
 #include "Common/version.h"
+#include "config.h"
 #include "Enclave_u.h"
 #include "attestation.h"
 #include "converter.h"
@@ -52,6 +53,7 @@
   int ecall_ret = TC_SUCCESS;
 
   try {
+    this->logger->info("Retrieve sealed dataset from " + config->getDatasetPath());
     auto source = request->source();
     auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
     auto req_data = request->data();

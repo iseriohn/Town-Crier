@@ -60,6 +60,7 @@ void tc::Config::parseConfigFile() {
     boost::property_tree::ini_parser::read_ini(configFile, pt);
     enclavePath = pt.get<string>("enclave_path");
     tcContractEthereumAddr = pt.get<string>("tc_address");
+    datasetPath = pt.get<string>("dataset_path");
     relayRPCAccessPoint = pt.get<int>("RPC.port");
     sealedECDSAKey = pt.get<string>("sealed.sig_key");
     sealedHybridEncryptionkey = pt.get<string>("sealed.hybrid_key");
@@ -105,6 +106,7 @@ string tc::Config::toString() {
   ss << "Using config file: " << this->getConfigFile() << endl;
   ss << "+ using enclave image: " << this->getEnclavePath() << endl;
   ss << "+ listening for TC relay at port: " << this->getRelayRPCAccessPoint() << endl;
+  ss << "+ data set path: " << this->getDatasetPath() << endl;
   ss << "+ serving contract at: " << this->getTcEthereumAddress();
   return ss.str();
 }
@@ -115,4 +117,5 @@ const string &tc::Config::getSealedSigKey() const { return sealedECDSAKey; }
 const string &tc::Config::getSealedHybridKey() const { return sealedHybridEncryptionkey; }
 const string &tc::Config::getEnclavePath() const { return enclavePath; }
 const string &tc::Config::getTcEthereumAddress() const { return tcContractEthereumAddr; }
+const string &tc::Config::getDatasetPath() const { return datasetPath; }
 bool tc::Config::getIsPrintMR() const { return isPrintMR; }

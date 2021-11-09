@@ -130,7 +130,29 @@ int identity_token(uint32_t source,
   }
   
   int identity_index;
-  
+  string wallet_address, hybrid_pubkey;
+/*
+  try {
+    // load the wallet key --- the ECDSA key used to sign transactions
+    wallet_address =
+        unseal_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
+    provision_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
+    LL_INFO("using wallet address at %s", wallet_address.c_str());
+
+    // load the encryption key --- the key under which inputs are encrypted
+    hybrid_pubkey = unseal_key(
+        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
+    provision_key(
+        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
+    LL_INFO("using hybrid pubkey: %s", hybrid_pubkey.c_str());
+  } catch (const tc::EcallException &e) {
+    LL_CRITICAL("%s", e.what());
+    exit(-1);
+  } catch (const std::exception &e) {
+    LL_CRITICAL("%s", e.what());
+    exit(-1);
+  }
+  */
   try {
     //return form_transaction(0, );
   }

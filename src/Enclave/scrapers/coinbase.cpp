@@ -141,13 +141,11 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
     dob = std::to_string(response_ex_struct.get<int64_t>());
   } else return INVALID_PARAMS;
   response_ex_struct = response_struct.get("dob_month");
-  LL_DEBUG("noooooo");
   if (response_ex_struct.is<int64_t>()) {
     string month = std::to_string(response_ex_struct.get<int64_t>());
     dob = dob + "-" + std::string(2 - month.length(), '0') + month;
   } else return INVALID_PARAMS;
   response_ex_struct = response_struct.get("dob_day");
-  LL_DEBUG("noooooo");
   if (response_ex_struct.is<int64_t>()) {
     string day = std::to_string(response_ex_struct.get<int64_t>());
     dob = dob + "-" + std::string(2 - day.length(), '0') + day;
