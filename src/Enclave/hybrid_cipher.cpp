@@ -83,6 +83,15 @@ int tc_get_hybrid_pubkey(ECPointBuffer pubkey) {
   return HybridEncryption::secretToPubkey(&g_secret_hybrid_key, pubkey);
 }
 
+const string encrypt_query(const uint8_t* data, size_t data_len) {
+  HybridEncryption dec_ctx;
+  ECPointBuffer tc_pubkey;
+  dec_ctx.queryPubkey(tc_pubkey);
+
+  string plaintext = dec_ctx.hybridEncrypt(tc_pubkey, data, data_len);
+  hexdump("encrypted query: ", plaintext.c_str(), plaintext.size());
+  return plaintext;
+}
 
 const string decrypt_query(const uint8_t* data, size_t data_len) {
   HybridEncryption dec_ctx;

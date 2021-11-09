@@ -10,6 +10,10 @@
 #include "converter.h"
 #include "tc_exception.h"
 
+#include <iostream>
+#include <fstream>
+using namespace std;
+
 ::grpc::Status RpcServer::attest(::grpc::ServerContext* context,
                                  const ::rpc::Empty* request,
                                  ::rpc::Attestation* response)
@@ -50,26 +54,55 @@
                                  ::rpc::Empty* response)
 {
   //LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
-  int ecall_ret = TC_SUCCESS;
+int ecall_ret = TC_SUCCESS;
 
   try {
     this->logger->info("Retrieve sealed dataset from " + config->getDatasetPath());
+    ifstream dataset;
+    dataset.open(config->getDatasetPath());
+    string file = "";
+    if (dataset.is_open()) {
+      string line;
+      while (getline (dataset,line)) {
+        file = file + line + "\n";
+      }
+      dataset.close();
+    }
+    this->logger->debug("Dataset: " + file);
+   
     auto source = request->source();
     auto addr = reinterpret_cast<uint8_t*>((unsigned char*)request->addr().c_str());
     auto req_data = request->data();
+    unsigned char newdata[500] = {0};
+    size_t newdata_len = 0;
     auto st = identity_token(eid,
                              &ecall_ret,
                              source,
                              addr,
                              reinterpret_cast<unsigned char*>(const_cast<char*>(req_data.c_str())), 
-                             req_data.length()
+                             req_data.length(),
+                             reinterpret_cast<unsigned char*>(const_cast<char*>(file.c_str())),
+                             file.length(),
+                             newdata,
+                             &newdata_len
                              );
 
     if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
       LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
-      throw std::runtime_error("ecall failed");
+        throw std::runtime_error("ecall failed");
     } else {
       this->logger->info("ecall succeeds");
+
+      if (newdata_len > 0) {
+        ofstream dataset;
+        dataset.open (config->getDatasetPath(), ios::out | ios::app | ios::binary); 
+        if (dataset.is_open()) {
+          dataset << newdata << endl;
+          dataset.close();
+          this->logger->info("new identity written in dataset (sealed)");
+        }
+      }
+
       return grpc::Status::OK;
     }
   }

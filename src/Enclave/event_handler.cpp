@@ -85,7 +85,11 @@ Request(app, 5, ['bitcoin']);
 int identity_token(uint32_t source, 
                    uint8_t* addr, 
                    unsigned char* sealed_data, 
-                   size_t sealed_data_len) {
+                   size_t sealed_data_len,
+                   unsigned char* dataset,
+                   size_t dataset_len,
+                   unsigned char* newdata,
+                   size_t* newdata_len) {
   string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
   LL_INFO("New query received (wallet address: 0x%s, data source: #%d).", wallet.c_str(), source);
   string plain = decrypt_query(sealed_data, sealed_data_len);
@@ -94,10 +98,11 @@ int identity_token(uint32_t source,
   LL_INFO("Sealed HTTP header decrypted.");
   LL_DEBUG("Decrypted HTTP header: %s", data);
  
+  string credential;
+  char resp[500] = {0};
   switch (source) {
     case TYPE_SSA: {
       SSAScraper scraper;
-      char resp[500] = {0};
       switch (scraper.handle_long_resp(data, data_len, resp)) {
         case UNKNOWN_ERROR:
           return TC_UNKNOWN_ERROR;
@@ -107,13 +112,13 @@ int identity_token(uint32_t source,
           return TC_INPUT_ERROR;
         case NO_ERROR:
           LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
+          credential = (char*)resp;
           break;
       }
       break;
     }
     case TYPE_COINBASE: {
       CoinbaseScraper scraper;
-      char resp[500] = {0};
       switch (scraper.handle_long_resp(data, data_len, resp)) {
         case UNKNOWN_ERROR:
           return TC_UNKNOWN_ERROR;
@@ -123,36 +128,36 @@ int identity_token(uint32_t source,
           return TC_INPUT_ERROR;
         case NO_ERROR:
           LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
+          credential = (char*)resp;
           break;
       }
       break;
     }
   }
   
-  int identity_index;
-  string wallet_address, hybrid_pubkey;
-/*
-  try {
-    // load the wallet key --- the ECDSA key used to sign transactions
-    wallet_address =
-        unseal_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
-    provision_key(eid, config.getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
-    LL_INFO("using wallet address at %s", wallet_address.c_str());
-
-    // load the encryption key --- the key under which inputs are encrypted
-    hybrid_pubkey = unseal_key(
-        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
-    provision_key(
-        eid, config.getSealedHybridKey(), tc::keyUtils::HYBRID_ENCRYPTION_KEY);
-    LL_INFO("using hybrid pubkey: %s", hybrid_pubkey.c_str());
-  } catch (const tc::EcallException &e) {
-    LL_CRITICAL("%s", e.what());
-    exit(-1);
-  } catch (const std::exception &e) {
-    LL_CRITICAL("%s", e.what());
-    exit(-1);
+  int identity_index = -1;
+  string sealed = (char*)dataset;
+  size_t start = 0;
+  size_t pos = sealed.find("\n");
+  while (pos != std::string::npos) {
+    ++identity_index;
+    LL_DEBUG("To be decrypted: %s", sealed.substr(start, pos - start).c_str()); 
+    string identity = decrypt_query(dataset + start, pos - start);
+    LL_DEBUG("Decrypted identity in dataset: %s", identity.c_str());
+    if (identity == credential) {
+      LL_INFO("Credential already exists!");
+      return 0;
+    }
+    start = pos + 1;
+    pos = sealed.find("\n", start);
   }
-  */
+
+  LL_INFO("New credential!");
+  string encrypted_credential = encrypt_query((unsigned char*)resp, credential.size());
+  std::copy(encrypted_credential.begin(), encrypted_credential.end(), newdata);
+  *newdata_len = encrypted_credential.size();
+  LL_DEBUG("Encrypted identity in dataset (%d bytes): %s", *newdata_len, newdata);
+
   try {
     //return form_transaction(0, );
   }
@@ -160,9 +165,10 @@ int identity_token(uint32_t source,
     LL_CRITICAL("%s", e.what());
     return INTERNAL_ERR;
   }
-    
+
   return 0;
 }
+
 int handle_request(int nonce,
                    uint64_t id,
                    uint64_t type,
