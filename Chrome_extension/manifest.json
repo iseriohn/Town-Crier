@@ -1,7 +1,7 @@
 {
-  "name": "Study #0",
+  "name": "Identity NFT",
   "version": "0.1",
-  "description": "Study #0: Demographic data collection (source: SSA)",
+  "description": "Verify credential to issue one-NFT-per-identity",
   "permissions": [
     "webRequest",
     "<all_urls>"

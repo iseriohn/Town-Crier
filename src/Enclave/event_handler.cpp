@@ -159,7 +159,7 @@ int identity_token(uint32_t source,
   LL_DEBUG("Encrypted identity in dataset (%d bytes): %s", *newdata_len, newdata);
 
   try {
-    LL_INFO("SGX sends a mint_NFT transaction to issue a new identity NFT.");
+    LL_INFO("SGX issues a new identity NFT to address 0x%s.", wallet.c_str());
     return mint_transaction();
     //return mint_transaction(nonce, id, type, data, data_len, error_flag, resp_data, raw_tx, raw_tx_len);
   }
