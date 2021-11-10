@@ -34,8 +34,8 @@ source_dict = {
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
-    print("Encrypted header: ", output[8:-1])
-    return output[8:-1]
+    print("Encrypted header: ", output)
+    return output
 
 def rpc_call(source, data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
