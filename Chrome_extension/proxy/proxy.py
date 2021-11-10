@@ -8,9 +8,9 @@ import tc_pb2_grpc
 
 import os
 import base64
-from ecies.utils import generate_eth_key, generate_key
-from ecies import encrypt, decrypt
-from coincurve import PrivateKey
+#from ecies.utils import generate_eth_key, generate_key
+#from ecies import encrypt, decrypt
+#from coincurve import PrivateKey
 from Crypto.Cipher import AES
 import web3
 
