@@ -102,7 +102,7 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
   }
  
   LL_INFO("HTTP response received.");
-  LL_DEBUG("HTTP response: %s", api_response.c_str());
+  LL_INFO("[DEMO ONLY, TO BE SEALED] response from Coinbase:\n%s", api_response.c_str());
   if (api_response.empty()) {
     LL_CRITICAL("api return empty");
     return WEB_ERROR;

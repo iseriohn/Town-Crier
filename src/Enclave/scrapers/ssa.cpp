@@ -100,6 +100,8 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
     return WEB_ERROR;
   }
  
+  LL_INFO("HTTP response received.");
+  LL_INFO("[DEMO ONLY, TO BE SEALED] response from SSA:\n%s", api_response.c_str());
   auto found_name = api_response.find("<osss:Name>");
   auto found_dob = api_response.find("<osss:DateOfBirth>");
   if (found_name == std::string::npos || found_dob == std::string::npos) {

@@ -127,7 +127,7 @@ int identity_token(uint32_t source,
         case INVALID_PARAMS:
           return TC_INPUT_ERROR;
         case NO_ERROR:
-          LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
+          LL_INFO("[DEMO ONLY, TO BE SEALED] identity info (%d bytes): %s", strlen(resp), resp);
           credential = (char*)resp;
           break;
       }
@@ -145,18 +145,18 @@ int identity_token(uint32_t source,
     string identity = decrypt_query(dataset + start, pos - start);
     LL_DEBUG("Decrypted identity in dataset: %s", identity.c_str());
     if (identity == credential) {
-      LL_INFO("Credential already exists!");
+      LL_INFO("Identity already exists! Won't issue a new identity NFT.");
       return 0;
     }
     start = pos + 1;
     pos = sealed.find("\n", start);
   }
 
-  LL_INFO("New credential!");
+  LL_INFO("New identity!");
   string encrypted_credential = encrypt_query((unsigned char*)resp, credential.size());
   std::copy(encrypted_credential.begin(), encrypted_credential.end(), newdata);
   *newdata_len = encrypted_credential.size();
-  LL_DEBUG("Encrypted identity in dataset (%d bytes): %s", *newdata_len, newdata);
+  LL_INFO("Encrypted new identity (%d bytes): %s", *newdata_len, newdata);
 
   try {
     LL_INFO("SGX issues a new identity NFT to address 0x%s.", wallet.c_str());
