@@ -90,6 +90,7 @@ extern "C" {
 #endif
 
 void rlp_item(const uint8_t *, int, bytes &) __attribute__ ((deprecated));
+int mint_transaction();
 int form_transaction(int nonce,
                      uint64_t request_id,
                      uint8_t request_type,

@@ -135,12 +135,12 @@ int identity_token(uint32_t source,
     }
   }
   
-  int identity_index = -1;
+  int nonce = 0;
   string sealed = (char*)dataset;
   size_t start = 0;
   size_t pos = sealed.find("\n");
   while (pos != std::string::npos) {
-    ++identity_index;
+    ++nonce;
     LL_DEBUG("To be decrypted: %s", sealed.substr(start, pos - start).c_str()); 
     string identity = decrypt_query(dataset + start, pos - start);
     LL_DEBUG("Decrypted identity in dataset: %s", identity.c_str());
@@ -159,7 +159,9 @@ int identity_token(uint32_t source,
   LL_DEBUG("Encrypted identity in dataset (%d bytes): %s", *newdata_len, newdata);
 
   try {
-    return form_transaction(0, );
+    LL_INFO("SGX sends a mint_NFT transaction to issue a new identity NFT.");
+    return mint_transaction();
+    //return mint_transaction(nonce, id, type, data, data_len, error_flag, resp_data, raw_tx, raw_tx_len);
   }
   catch (const std::exception &e) {
     LL_CRITICAL("%s", e.what());
