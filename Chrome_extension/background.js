@@ -18,26 +18,112 @@ function sendRequest(data) {
 }
 */
 
+function ab2str(buf) {
+  return String.fromCharCode.apply(null, new Uint8Array(buf));
+}
+
+function str2ab(str) {
+  const buf = new ArrayBuffer(str.length);
+  const bufView = new Uint8Array(buf);
+  for (let i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+
+async function exportCryptoKey(format, key) {
+  const exported = await crypto.subtle.exportKey(
+    format,
+    key
+  );
+  const exportedAsString = ab2str(exported);
+  return btoa(exportedAsString);
+}
+
+async function aesEnc(key, msg) {
+  // Import SGX public key
+  var sgx = await crypto.subtle.importKey(
+    "raw",
+    str2ab(atob(key)),
+    {
+      name: "ECDH",
+      namedCurve: "P-256"
+    },
+    true,
+    []
+  );
+  
+  // Generate key pair
+  var keyPair = await crypto.subtle.generateKey(
+    {
+      name: "ECDH",
+      namedCurve: "P-256"
+    },
+    true,
+    ["deriveKey"]
+  );
+  // var pubKey = await exportCryptoKey("raw", keyPair.publicKey);
+  // var secKey = await exportCryptoKey("pkcs8", keyPair.privateKey);
+  var pubKey = await crypto.subtle.exportKey("raw", keyPair.publicKey);
+  pubKey = new Uint8Array(pubKey);
+ 
+  // Derive AES key by ECDH
+  var symKey = await crypto.subtle.deriveKey(
+    {
+      name: "ECDH",
+      public: sgx
+    },
+    keyPair.privateKey,
+    {
+      name: "AES-GCM",
+      length: 256
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
+ 
+  // Encrypt message by AEC-GCM-256
+  var iv = crypto.getRandomValues(new Uint8Array(32));
+	encoder = new TextEncoder('utf-8');
+  encodedString = encoder.encode(msg);
+  var encrypted = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv
+    },
+    symKey,
+    encodedString
+  );
+  var encrypted = new Uint8Array(encrypted);
+  
+  // Construct message: pubKey || iv || tag || cipher
+  cipher = new Uint8Array(pubKey.length + iv.length + encrypted.length);
+  cipher.set(pubKey);
+  cipher.set(iv, pubKey.length);
+  cipher.set(encrypted.slice(-16), pubKey.length + iv.length);
+  cipher.set(encrypted.slice(0, encrypted.length - 16), pubKey.length + iv.length + 16);
+  cipher = btoa(ab2str(cipher));
+  console.log(cipher);
+  return cipher;
+} /* end aesEnc() */
+
+/*
 try {
   importScripts('./aes4js.js');
 } catch (e) {
   console.error(e);
 }
+*/
 
-function stringToArrayBuffer(string) {
-  var buffer = new ArrayBuffer(string.length);
-  var bufView = new Uint8Array(buffer);
-  for (var i=0; i < string.length; i++) {
-    bufView[i] = string.charCodeAt(i);
-  }
-  return buffer;
-}
-
-function arrayBufferToString(buffer) {
-  return String.fromCharCode.apply(null, new Uint8Array(buffer));
-}
 
 const addr = 'ws://128.84.84.208:9001'
+const host = '128.84.84.208'
+const port = 9001
+
+// const sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
+const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
+
+var attempt = aesEnc(sgx_pk, "hi");
 
 const tabStorage = {};
 const networkFilters = {
@@ -62,15 +148,14 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       }
     }
   }
+
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
-    aes4js.encrypt("123", "hello world") // encrypt with password 123
-      .then(aes4js.decrypt.bind(this, "123")) // decrypt
-      //.then(alert) // display decrypted value
     console.log("Preparing ");
     chrome.tabs.create({url:"hello.html"});
     //alert("sending HTTP header to TC");
-    ws.send(data);
+    var encrypted = aesEnc(sgx_pk, data);
+    ws.send(encrypted);
     ws.close();
   };
 
@@ -83,17 +168,5 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     console.log("Connection closed.");
   };      
 
-/*
-  chrome.socket.create("tcp", (createInfo) => {
-    var socketId = createInfo.socketId;
-    chrome.socket.connect(socketId, hostname, port, (result) => {
-      if (result === 0) {
-        var requestString = "GET / HTTP/1.1\r\nHost: "+hostname+"\r\nConnection: close\r\n\r\n";
-        var requestBuffer = stringToArrayBuffer(requestString);
-        chrome.socket.write(socketId, requestBuffer, (writeInfo)) {});
-      }
-    });
-  });
-*/
 //sendRequest(details.url);
 }, networkFilters, ["requestHeaders", "extraHeaders"]);
