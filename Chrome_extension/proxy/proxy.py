@@ -9,9 +9,9 @@ import tc_pb2_grpc
 
 import os
 import base64
-from ecies.utils import generate_eth_key, generate_key
-from ecies import encrypt, decrypt
-from coincurve import PrivateKey
+#from ecies.utils import generate_eth_key, generate_key
+#from ecies import encrypt, decrypt
+#from coincurve import PrivateKey
 from Crypto.Cipher import AES
 import web3
 
@@ -36,8 +36,8 @@ source_dict = {
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
-    print("Encrypted header: ", output[8:-1])
-    return output[8:-1]
+    print("Encrypted header: ", output)
+    return output
 
 def rpc_call(data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))

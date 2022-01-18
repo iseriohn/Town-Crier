@@ -1,14 +1,20 @@
 {
   "name": "Identity NFT",
-  "version": "0.1",
-  "description": "Verify credential to issue one-NFT-per-identity",
-  "permissions": [
-    "webRequest",
-    "<all_urls>"
+   "version": "0.1",
+   "description": "Verify credential to issue one-NFT-per-identity",
+   "permissions": [
+    "webRequest", "tabs"
+   ],
+  "host_permissions": [
+    "https://*/"
   ],
-  "background": {
-    "scripts": ["background.js"],
-    "persistent": true
+  "action": {
+    "default_popup": "hello.html",
+    "default_title": "Open the popup",
+    "default_icon": "hello_extensions.png"
   },
-  "manifest_version": 2 
+   "background": {
+    "service_worker": "background.js"
+   },
+  "manifest_version": 3
 }

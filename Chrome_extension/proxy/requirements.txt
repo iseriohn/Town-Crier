@@ -1,0 +1,5 @@
+grpcio
+websockets
+protobuf
+pycryptodome
+web3
