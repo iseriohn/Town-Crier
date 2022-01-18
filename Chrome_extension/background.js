@@ -123,7 +123,6 @@ const port = 9001
 // const sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 
-var attempt = aesEnc(sgx_pk, "hi");
 
 const tabStorage = {};
 const networkFilters = {
@@ -149,14 +148,17 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     }
   }
 
+
+
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
     console.log("Preparing ");
     chrome.tabs.create({url:"hello.html"});
-    //alert("sending HTTP header to TC");
-    var encrypted = aesEnc(sgx_pk, data);
-    ws.send(encrypted);
-    ws.close();
+    encrypted = aesEnc(sgx_pk, data).then(encrypted => {
+      console.log(encrypted);
+      ws.send(encrypted);
+      ws.close();
+    });
   };
 
   ws.onmessage = function(evt) {
@@ -166,7 +168,7 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
 
   ws.onclose = function(evt) {
     console.log("Connection closed.");
-  };      
+  };
 
 //sendRequest(details.url);
 }, networkFilters, ["requestHeaders", "extraHeaders"]);
