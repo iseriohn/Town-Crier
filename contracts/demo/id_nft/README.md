@@ -8,14 +8,19 @@ First of all, a version of geth (>= 1.6) should be installed.
     sudo apt-get update
     sudo apt-get install ethereum solc
 
-1. (Copy demorc.js to prepare.sh) Compile smart contracts by `./prepare.sh`.
+1. Compile smart contracts by `./prepare.sh > demorc.js`.
+   Then you can modify `demorc.js`, but REMEMBER to paste the updated `demorc.js` in `prepare.sh`!!!
 
 2. Spin up `geth` by running `./geth_privnet.sh`.
 
-3. `geth` will reuse keys stored in `wallet_privnet`. To make sure your geth has picked them up, run the following command within the geth console and compare the output verbatim.
+3. `geth` will reuse keys stored in `wallet_privnet`. 
+    To make sure your geth has picked them up, run the following command within the geth console and compare the output verbatim.
     Also, verify in `genesis.json`, same accounts are allocated with ethers.
 
-4. In geth console, load `demorc.js` and setup the NFT contract (follow the commands at the end of `demorc.js`).
+4. You may ssh tunnel to the geth node on a remote server by `ssh -L 8545:127.0.0.1:8646 [remote_server]`. 
+   Then you can set the Metamask/Remix RPC addr to 127.0.0.1:8545 to connect to the geth node.
+
+5. In geth console, load `demorc.js` and setup the NFT contract (follow the commands at the end of `demorc.js`).
         
         // For privatenet:
         // loadScript("scripts/demorc.js");
@@ -31,10 +36,11 @@ First of all, a version of geth (>= 1.6) should be installed.
         // Request(app, 4, ['1ZE331480394808282']);
         // Request(app, 5, ['bitcoin']);
 
-5. Change the contract address in `Town-Crier/config/config-privatenet-sim` and rebuild TC.
+6. Change the contract address in `Town-Crier/config/config-privatenet-sim` and rebuild TC.
 
-6. Launch TC.
+7. Launch TC.
 
-7. On the user side, turn on the Chrome extension and run proxy.py with wallet address.
+8. On the user side, turn on the Chrome extension and run proxy.py with wallet address.
 
-8. Login to SSA and Coinbase to obtain Identity NFTs.
+9. Login to SSA and Coinbase to obtain Identity NFTs.
+
