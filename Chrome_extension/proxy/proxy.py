@@ -48,7 +48,6 @@ def rpc_call(data):
 
 async def request(websocket, path):
     data = await websocket.recv()
-    print("Receive data: ", data)
     rpc_call(data)
     print("Encrypted data: ", data)
 
