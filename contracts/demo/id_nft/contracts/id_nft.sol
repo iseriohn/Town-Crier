@@ -17,8 +17,7 @@ contract IdNFT is ERC721, Ownable {
         public 
         returns (uint256)
     {
-        //bytes memory data = abi.encodePacked(address(this), msg.sender);
-        bytes memory data = abi.encodePacked("hi");
+        bytes memory data = abi.encodePacked(address(this), msg.sender);
         bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", data));
         
         require(ecrecover(hash, v, r, s) == sgx);
