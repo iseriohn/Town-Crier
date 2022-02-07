@@ -18,11 +18,11 @@ $GETH --datadir=$DATADIR \
   --ws \
   --ws.addr=$WS_ADDR \
   --ws.port=$WS_PORT \
-  --ws.api="db,eth,ne,web3,personal,crypto-js" \
+  --ws.api="db,eth,ne,web3,personal,crypto-js,abi,utils" \
   --http \
   --http.addr=$HTTP_ADDR \
   --http.port=$HTTP_PORT \
-  --http.api="admin,debug,web3,eth,txpool,personal,miner,net,crypto-js" \
+  --http.api="admin,debug,web3,eth,txpool,personal,miner,net,crypto-js,abi,utils" \
   --http.vhosts '*' \
   --http.corsdomain '*' \
   --allow-insecure-unlock \

@@ -9,18 +9,14 @@ import tc_pb2_grpc
 
 import os
 import base64
-#from ecies.utils import generate_eth_key, generate_key
-#from ecies import encrypt, decrypt
-#from coincurve import PrivateKey
-from Crypto.Cipher import AES
 import web3
 
-import subprocess
-command = './hybrid-enc/henc'
-sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
+#import subprocess
+#command = './hybrid-enc/henc'
+#sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
 sgx_server = 'localhost:12345'
 proxy_port = 9001
-proxy_host = "0.0.0.0"
+proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
 
 wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
 
@@ -49,7 +45,7 @@ def rpc_call(data):
 async def request(websocket, path):
     data = await websocket.recv()
     rpc_call(data)
-    print("Encrypted data: ", data)
+    print("Received data: ", data)
 
 
 if __name__ == "__main__":
@@ -58,7 +54,6 @@ if __name__ == "__main__":
     if len(args) >= 1 and web3.Web3.isAddress(args[0]):
         wallet_addr = bytes.fromhex(args[0][2:])
 
-    start_server = websockets.serve(request, "0.0.0.0", proxy_port) # 0.0.0.0 for remote connection
-    # start_server = websockets.serve(request, "localhost", proxy_port)
+    start_server = websockets.serve(request, proxy_host, proxy_port)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
