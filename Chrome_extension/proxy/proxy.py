@@ -18,7 +18,7 @@ sgx_server = 'localhost:12345'
 proxy_port = 9001
 proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
 
-wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
+#wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
 
 
 source_dict = {
@@ -39,21 +39,24 @@ def rpc_call(data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
     stub = tc_pb2_grpc.towncrierStub(channel)
     message = tc_pb2.Data(data = data)
-    res = stub.participate(message)
+    res = stub.id_nft(message)
+    return res.data
 
 
 async def request(websocket, path):
     data = await websocket.recv()
     print("Received data: ", data)
-    rpc_call(data)
+    resp = rpc_call(data)
+    await websocket.send(resp)
+    print("Sent response: ", resp)
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    
-    if len(args) >= 1 and web3.Web3.isAddress(args[0]):
-        wallet_addr = bytes.fromhex(args[0][2:])
-
+#    args = sys.argv[1:]
+#    
+#    if len(args) >= 1 and web3.Web3.isAddress(args[0]):
+#        wallet_addr = bytes.fromhex(args[0][2:])
+#
     start_server = websockets.serve(request, proxy_host, proxy_port)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
