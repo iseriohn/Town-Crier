@@ -45,6 +45,15 @@ function hexStringToByte(str) {
 }
 
 
+function byteToHexString(byteArray) {
+  var s = '';
+  byteArray.forEach(function(byte) {
+    s += ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  });
+  console.log(s);
+  return s;
+}
+
 async function exportCryptoKey(format, key) {
   const exported = await crypto.subtle.exportKey(
     format,
@@ -127,18 +136,25 @@ try {
 }
 */
 
-function encryptAndSend(msg) {
+function encryptAndSend(msg, tabId) {
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
     encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
       console.log(encrypted);
       ws.send(encrypted);
-      ws.close();
     });
   };
 
   ws.onmessage = function(evt) {
     console.log( "Received Message: " + evt.data);
+    decoded = new Uint8Array(str2ab(atob(evt.data)))
+    resp = decoded[0].toString() + ", ";
+    resp = resp + "0x" + byteToHexString(decoded.slice(1, 33)) + ", ";
+    resp = resp + "0x" + byteToHexString(decoded.slice(33, 65));
+
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, resp);
+    });
     ws.close();
   };
 
@@ -199,13 +215,16 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
   chrome.tabs.create({url:"popup.html"}, function(tab) {
     console.log(tab.id);
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      if (sender.tab.id != tab.id) return;
+      chrome.runtime.onMessage.removeListener();
       contract = hexStringToByte(removePrefix(request.contract));
       wallet = hexStringToByte(removePrefix(request.wallet));
       console.log(contract);
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
       encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
-      encryptAndSend(encodedMsg);
+      encryptAndSend(encodedMsg, tab.id);
+      return true;
     });
   });
 }, networkFilters, ["requestHeaders", "extraHeaders"]);

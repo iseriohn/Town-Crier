@@ -3,3 +3,9 @@ var wallet = window.prompt("What is your wallet address for receiving the Identi
 
 chrome.runtime.sendMessage({contract: contract, wallet: wallet});
 
+chrome.runtime.onMessage.addListener(
+  function(request, sender, sendResponse) {
+    document.getElementById("signature").innerHTML = request;
+  }
+);
+
