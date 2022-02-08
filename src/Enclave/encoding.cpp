@@ -160,7 +160,7 @@ std::vector<uint8_t> itob(uint64_t num, size_t width) {
   return out;
 }
 
-string ucharToHexString(unsigned char* charArray, uint32_t charArrayLength) {
+string ucharToHexString(const unsigned char* charArray, uint32_t charArrayLength) {
     if(charArray == nullptr) {
         return "nullptr";
     }

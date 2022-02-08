@@ -89,7 +89,6 @@ const string encrypt_query(const uint8_t* data, size_t data_len) {
   dec_ctx.queryPubkey(tc_pubkey);
 
   string plaintext = dec_ctx.hybridEncrypt(tc_pubkey, data, data_len);
-  hexdump("encrypted query: ", plaintext.c_str(), plaintext.size());
   return plaintext;
 }
 
@@ -99,13 +98,11 @@ const string decrypt_query(const uint8_t* data, size_t data_len) {
   dec_ctx.queryPubkey(tc_pubkey);
 
   string cipher_b64(string(data, data + data_len).c_str());
-  hexdump("encrypted query: ", data, data_len);
 
   try {
     HybridCiphertext cipher = dec_ctx.decode(cipher_b64);
     vector<uint8_t> cleartext;
     dec_ctx.hybridDecrypt(cipher, cleartext);
-    hexdump("decrypted message", &cleartext[0], cleartext.size());
 
     // decrypted message is the base64 encoded data
     string encoded_message(cleartext.begin(), cleartext.end());

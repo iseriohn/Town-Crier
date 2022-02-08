@@ -71,33 +71,42 @@
 #include "hybrid_cipher.h"
 #include "env.h"
 
+
 /*
- * testing data
- *
-Request(app, 1, ['FJM273', pad(1492100100, 64)]);
-Request(app, 2, ['f68d2a32cf17b1312c6db3f236a38c94', '4c9f92f6ec1e2a20a1413d0ac1b867a3', '32884794', pad(1456380265, 64), pad(1, 64), 'Portal']);
-Request(app, 3, ['GOOG', pad(1262390400,64)]);;
-Request(app, 4, ['1ZE331480394808282']);
-Request(app, 5, ['bitcoin']);
- */
-
-
-int identity_token(uint32_t source, 
-                   uint8_t* addr, 
+data format: contract addr (20 bytes) || user wallet (20 bytes) || source (1 byte) || data
+*/
+int identity_token(
                    unsigned char* sealed_data, 
                    size_t sealed_data_len,
                    unsigned char* dataset,
                    size_t dataset_len,
                    unsigned char* newdata,
                    size_t* newdata_len) {
-  string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
-  LL_INFO("New query received (wallet address: 0x%s, data source: #%d).", wallet.c_str(), source);
-  string plain = decrypt_query(sealed_data, sealed_data_len);
+  string plain;
+  try {  
+    plain = decrypt_query(sealed_data, sealed_data_len);
+  }
+  catch (const std::exception &e) {
+    LL_CRITICAL("exception while handling request: %s", e.what());
+  }
+  LL_INFO("Sealed HTTP header decrypted.");
+  
   auto data = plain.c_str();
   auto data_len = plain.size();
-  LL_INFO("Sealed HTTP header decrypted.");
+  if (data_len < 41) {
+    LL_INFO("Invalid query format. Please send your query as [contract address]||[wallet address]||[source]||[data]");
+    return 0;
+  }
+  string contract_addr = ucharToHexString(reinterpret_cast<const unsigned char*>(data), 20);
+  string wallet_addr = ucharToHexString(reinterpret_cast<const unsigned char*>(data) + 20, 20);
+  auto source = data[40];
+  data = data + 41;
+  data_len -= 41;
+  LL_DEBUG("Source: %d", source);
+  LL_DEBUG("Contract address: 0x%s", contract_addr.c_str());
+  LL_DEBUG("Wallet address: 0x%s", wallet_addr.c_str());
   LL_DEBUG("Decrypted HTTP header: %s", data);
- 
+  
   string credential;
   char resp[500] = {0};
   switch (source) {
@@ -111,7 +120,6 @@ int identity_token(uint32_t source,
         case INVALID_PARAMS:
           return TC_INPUT_ERROR;
         case NO_ERROR:
-          LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
           credential = (char*)resp;
           break;
       }
@@ -127,13 +135,13 @@ int identity_token(uint32_t source,
         case INVALID_PARAMS:
           return TC_INPUT_ERROR;
         case NO_ERROR:
-          LL_INFO("[DEMO ONLY, TO BE SEALED] identity info (%d bytes): %s", strlen(resp), resp);
           credential = (char*)resp;
           break;
       }
       break;
     }
   }
+  LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
   
   int nonce = 0;
   string sealed = (char*)dataset;
@@ -159,8 +167,7 @@ int identity_token(uint32_t source,
   LL_INFO("Encrypted new identity (%d bytes): %s", *newdata_len, newdata);
 
   try {
-    LL_INFO("SGX issues a new identity NFT to address 0x%s.", wallet.c_str());
-    return mint_transaction();
+    LL_INFO("SGX issues a new identity NFT to address 0x%s.", wallet_addr.c_str());
     //return mint_transaction(nonce, id, type, data, data_len, error_flag, resp_data, raw_tx, raw_tx_len);
   }
   catch (const std::exception &e) {
@@ -170,6 +177,18 @@ int identity_token(uint32_t source,
 
   return 0;
 }
+
+
+
+/*
+ * testing data
+ *
+Request(app, 1, ['FJM273', pad(1492100100, 64)]);
+Request(app, 2, ['f68d2a32cf17b1312c6db3f236a38c94', '4c9f92f6ec1e2a20a1413d0ac1b867a3', '32884794', pad(1456380265, 64), pad(1, 64), 'Portal']);
+Request(app, 3, ['GOOG', pad(1262390400,64)]);;
+Request(app, 4, ['1ZE331480394808282']);
+Request(app, 5, ['bitcoin']);
+ */
 
 int handle_request(int nonce,
                    uint64_t id,

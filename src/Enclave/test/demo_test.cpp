@@ -60,8 +60,6 @@
 #include "external/picojson.h"
 
 int demo_self_test(uint32_t study, uint8_t* addr, unsigned char* sealed_data, size_t sealed_data_len) {
-    string wallet = ucharToHexString(reinterpret_cast<unsigned char*>(addr), 20);
-  //LL_INFO("New participant of Study #%d with address 0x%s.", study, wallet.c_str());
   LL_INFO("New query received.");
   LL_INFO("Encrypted HTTP request header: %s", sealed_data);
   string plain = decrypt_query(sealed_data, sealed_data_len);

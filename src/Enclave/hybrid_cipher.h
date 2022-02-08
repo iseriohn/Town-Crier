@@ -98,7 +98,7 @@ class HybridCiphertext {
 
 class HybridEncryption {
  public:
-  static const mbedtls_ecp_group_id EC_GROUP = MBEDTLS_ECP_DP_SECP256K1;
+  static const mbedtls_ecp_group_id EC_GROUP = MBEDTLS_ECP_DP_SECP256R1;
   static const AESIv iv;
   static const size_t PUBLIC_KEY_SIZE = 65;
 

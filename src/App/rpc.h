@@ -35,6 +35,9 @@ class RpcServer final: public rpc::towncrier::Service {
    ::grpc::Status participate(::grpc::ServerContext * context,
                          const ::rpc::Data* request,
                          ::rpc::Empty* response) override;
+   ::grpc::Status id_nft(::grpc::ServerContext * context,
+                         const ::rpc::Data* request,
+                         ::rpc::Data* response) override;
  };
 
 #endif  // TOWN_CRIER_RPC_H
