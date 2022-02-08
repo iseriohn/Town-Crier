@@ -199,6 +199,8 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
   chrome.tabs.create({url:"popup.html"}, function(tab) {
     console.log(tab.id);
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      if (sender.tab.id != tab.id) return;
+      chrome.runtime.onMessage.removeListener();
       contract = hexStringToByte(removePrefix(request.contract));
       wallet = hexStringToByte(removePrefix(request.wallet));
       console.log(contract);
@@ -206,6 +208,7 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
 	    encoder = new TextEncoder('utf-8');
       encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
       encryptAndSend(encodedMsg);
+      return true;
     });
   });
 }, networkFilters, ["requestHeaders", "extraHeaders"]);
