@@ -22,7 +22,7 @@ proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
 
 
 source_dict = {
-    "https://secure.ssa.gov/OSSS/xml/down": 12,
+    "https://secure.ssa.gov/myssa/myprofi": 12,
     "https://accounts.coinbase.com/api/v1": 13,
     "https://onlinebanking.mtb.com/Accoun": 14,
     "https://secure01b.chase.com/svc/rr/p": 15,

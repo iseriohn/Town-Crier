@@ -240,8 +240,11 @@ HttpsClient::HttpsClient(HttpRequest &httpRequest) : httpRequest(httpRequest) {
 }
 
 string HttpsClient::buildRequestMessage() {
-  string requestMessage;
-  requestMessage += string("GET ") + httpRequest.getUrl();
+  string requestMessage = string("GET ");
+  if (!httpRequest.getMethodGet()) {
+    requestMessage = string("POST ");
+  }
+  requestMessage += httpRequest.getUrl();
   if (httpRequest.getIsHttp11() && requestMessage.find("HTTP/1.1") == string::npos) {
     requestMessage += " HTTP/1.1";
   }
