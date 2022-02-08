@@ -180,7 +180,7 @@ const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZm
 
 
 const source_dict = {
-    "https://secure.ssa.gov/OSSS/xml/down": 12,
+    "https://secure.ssa.gov/myssa/myprofi": 12,
     "https://accounts.coinbase.com/api/v1": 13,
     "https://onlinebanking.mtb.com/Accoun": 14,
     "https://secure01b.chase.com/svc/rr/p": 15,
@@ -195,7 +195,7 @@ const networkFilters = {
     "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
     "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list",
     "https://api.spotify.com/v1/playlists/*",
-    "https://secure.ssa.gov/OSSS/xml/downloadXML.action"
+    "https://secure.ssa.gov/myssa/myprofile-api/profileInfo"
   ]
 };
 
