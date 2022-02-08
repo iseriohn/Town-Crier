@@ -59,6 +59,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <mutex> 
 
 // app headers
 #include "App/Enclave_u.h"
@@ -75,6 +76,8 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 using namespace std;
+
+std::mutex mtx;           // mutex for critical section
 
 tc::Config *config;
 

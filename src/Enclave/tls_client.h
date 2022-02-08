@@ -72,24 +72,29 @@ class HttpRequest {
   const string url;
   const vector <string> headers;
   const bool isHttp11;
+  const bool method_get;
  public:
   HttpRequest(const string &host, const string &url) :
-      host(host), port("443"), url(url), isHttp11(false) {};
+      host(host), port("443"), url(url), isHttp11(false), method_get(true) {};
 
   HttpRequest(const string &host, const string &url, bool isHttp11) :
-      host(host), port("443"), url(url), isHttp11(isHttp11) {};
+      host(host), port("443"), url(url), isHttp11(isHttp11), method_get(true) {};
 
   HttpRequest(const string &host, const string &url, const vector <string> &headers) :
-      host(host), port("443"), url(url), headers(headers), isHttp11(false) {
+      host(host), port("443"), url(url), headers(headers), isHttp11(false), method_get(true) {
+      };
+
+  HttpRequest(const string &host, const string &url, const vector <string> &headers, bool isHttp11, bool method_get) :
+      host(host), port("443"), url(url), headers(headers), isHttp11(isHttp11), method_get(method_get) {
       };
 
   HttpRequest(const string &host, const string &url, const vector <string> &headers, bool isHttp11) :
-      host(host), port("443"), url(url), headers(headers), isHttp11(isHttp11) {
+      host(host), port("443"), url(url), headers(headers), isHttp11(isHttp11), method_get(true) {
       };
-
+  
   HttpRequest(const string &host, const string &port, const string &url, const vector <string> &headers, bool isHttp11)
       :
-      host(host), port(port), url(url), headers(headers), isHttp11(isHttp11) {};
+      host(host), port(port), url(url), headers(headers), isHttp11(isHttp11), method_get(true) {};
 
   const string &getHost() const {
     return host;
@@ -109,6 +114,10 @@ class HttpRequest {
 
   const bool getIsHttp11() const {
     return isHttp11;
+  }
+
+  const bool getMethodGet() const {
+    return method_get;
   }
 };
 

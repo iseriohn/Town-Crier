@@ -14,6 +14,8 @@
 #include <fstream>
 using namespace std;
 
+extern std::mutex mtx;           // mutex for critical section
+
 ::grpc::Status RpcServer::attest(::grpc::ServerContext* context,
                                  const ::rpc::Empty* request,
                                  ::rpc::Attestation* response)
@@ -53,9 +55,12 @@ using namespace std;
                                  const ::rpc::Data* request,
                                  ::rpc::Data* response)
 {
+
+  mtx.lock();
   //LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
 int ecall_ret = TC_SUCCESS;
 
+  unsigned char signature[65];
   try {
     ifstream dataset;
     dataset.open(config->getDatasetPath());
@@ -69,7 +74,7 @@ int ecall_ret = TC_SUCCESS;
     }
    
     auto req_data = request->data();
-    unsigned char newdata[500] = {0};
+    unsigned char newdata[2000] = {0};
     size_t newdata_len = 0;
     auto st = identity_token(eid,
                              &ecall_ret,
@@ -78,11 +83,13 @@ int ecall_ret = TC_SUCCESS;
                              reinterpret_cast<unsigned char*>(const_cast<char*>(file.c_str())),
                              file.length(),
                              newdata,
-                             &newdata_len
+                             &newdata_len,
+                             signature
                              );
 
     if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
       LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
+        mtx.unlock();
         throw std::runtime_error("ecall failed");
     } else {
       this->logger->info("ecall succeeds");
@@ -96,12 +103,19 @@ int ecall_ret = TC_SUCCESS;
           this->logger->info("new identity written in dataset (sealed)");
         }
       }
-
-      return grpc::Status::OK;
     }
   }
   catch (const std::exception& e) {
     LOG4CXX_ERROR(this->logger, "exception: " << e.what())
+  }
+  
+  mtx.unlock();
+  
+  char b64_buf[4096] = {0};
+  int buf_used = ext::b64_ntop(
+        signature, 65, b64_buf, sizeof b64_buf);
+  if (buf_used > 0) {
+    response->set_data(b64_buf);
   }
 
   return grpc::Status::OK;
@@ -111,6 +125,7 @@ int ecall_ret = TC_SUCCESS;
                                  const ::rpc::Data* request,
                                  ::rpc::Empty* response)
 {
+  mtx.lock();
   //LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
 int ecall_ret = TC_SUCCESS;
 
@@ -127,8 +142,9 @@ int ecall_ret = TC_SUCCESS;
     }
    
     auto req_data = request->data();
-    unsigned char newdata[500] = {0};
+    unsigned char newdata[2000] = {0};
     size_t newdata_len = 0;
+    unsigned char signature[65];
     auto st = identity_token(eid,
                              &ecall_ret,
                              reinterpret_cast<unsigned char*>(const_cast<char*>(req_data.c_str())), 
@@ -136,15 +152,16 @@ int ecall_ret = TC_SUCCESS;
                              reinterpret_cast<unsigned char*>(const_cast<char*>(file.c_str())),
                              file.length(),
                              newdata,
-                             &newdata_len
+                             &newdata_len,
+                             signature
                              );
 
     if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
       LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
+        mtx.unlock();
         throw std::runtime_error("ecall failed");
     } else {
       this->logger->info("ecall succeeds");
-
       if (newdata_len > 0) {
         ofstream dataset;
         dataset.open (config->getDatasetPath(), ios::out | ios::app | ios::binary); 
@@ -154,14 +171,13 @@ int ecall_ret = TC_SUCCESS;
           this->logger->info("new identity written in dataset (sealed)");
         }
       }
-
-      return grpc::Status::OK;
     }
   }
   catch (const std::exception& e) {
     LOG4CXX_ERROR(this->logger, "exception: " << e.what())
   }
 
+  mtx.unlock();
   return grpc::Status::OK;
 }
 

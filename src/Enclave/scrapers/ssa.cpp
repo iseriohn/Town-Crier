@@ -88,6 +88,7 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
   LL_DEBUG("url: %s", url);
 
   HttpRequest httpRequest("secure.ssa.gov", url, header, true);
+  LL_DEBUG("%d", httpRequest.getMethodGet());
   HttpsClient httpClient(httpRequest);
 
   string api_response;
@@ -102,6 +103,59 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
  
   LL_INFO("HTTP response received.");
   LL_INFO("[DEMO ONLY, TO BE SEALED] response from SSA:\n%s", api_response.c_str());
+  if (api_response.empty()) {
+    LL_CRITICAL("api return empty");
+    return WEB_ERROR;
+  }
+
+  picojson::value response_struct;
+  string err = picojson::parse(response_struct, api_response);
+  
+  if (!err.empty() || !response_struct.is<picojson::object>()) {
+    LL_CRITICAL("can't parse %s", api_response.c_str());
+    return WEB_ERROR;
+  }
+  if (response_struct.contains("error")) {
+    if (response_struct.get("error").is<string>()) {
+      err = response_struct.get("error").get<string>();
+    }
+
+    LL_CRITICAL("%s", err.c_str());
+    return WEB_ERROR;
+  }
+
+  string name = "";
+  picojson::value response_ex_struct = response_struct.get("loggedInUserInfo").get("name").get("firstName");
+  if (response_ex_struct.is<string>()) {
+    name = (string)response_ex_struct.get<string>();
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("loggedInUserInfo").get("name").get("lastName");
+  if (response_ex_struct.is<string>()) {
+    name = name + " " + (string)response_ex_struct.get<string>();
+  } else return INVALID_PARAMS;
+  std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+  
+  string dob = "";
+  response_ex_struct = response_struct.get("loggedInUserInfo").get("dobYear");
+  if (response_ex_struct.is<string>()) {
+    dob = (string)response_ex_struct.get<string>();
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("loggedInUserInfo").get("dobMonth");
+  if (response_ex_struct.is<string>()) {
+    string month = (string)response_ex_struct.get<string>();
+    dob = dob + "-" + std::string(2 - month.length(), '0') + month;
+  } else return INVALID_PARAMS;
+  response_ex_struct = response_struct.get("loggedInUserInfo").get("dobDay");
+  if (response_ex_struct.is<string>()) {
+    string day = (string)response_ex_struct.get<string>();
+    dob = dob + "-" + std::string(2 - day.length(), '0') + day;
+  } else return INVALID_PARAMS;
+  
+  name = dob + name;
+  name.copy(resp_data, name.size());
+  return NO_ERROR;
+
+  /*
   auto found_name = api_response.find("<osss:Name>");
   auto found_dob = api_response.find("<osss:DateOfBirth>");
   if (found_name == std::string::npos || found_dob == std::string::npos) {
@@ -115,4 +169,6 @@ err_code SSAScraper::handle_long_resp(const char *data, size_t data_len, char *r
   name = dob + name;
   name.copy(resp_data, name.size());
   return NO_ERROR;
+*/
 }
+
