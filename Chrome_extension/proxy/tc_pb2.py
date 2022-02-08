@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x08tc.proto\x12\x03rpc\"2\n\x04\x44\x61ta\x12\x0e\n\x06source\x18\x01 \x01(\r\x12\x0c\n\x04\x61\x64\x64r\x18\x02 \x01(\x0c\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\t\"?\n\x0b\x41ttestation\x12\r\n\x05quote\x18\x01 \x01(\t\x12\x12\n\nmr_enclave\x18\x02 \x01(\t\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"\x19\n\x06Status\x12\x0f\n\x07version\x18\x01 \x01(\t\"@\n\x07Request\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x0c\n\x04type\x18\x02 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\r\n\x05nonce\x18\x04 \x01(\x04\"3\n\x08Response\x12\x12\n\nerror_code\x18\x01 \x01(\r\x12\x13\n\x0bresponse_tx\x18\x02 \x01(\x0c\"\x07\n\x05\x45mpty2\xac\x01\n\ttowncrier\x12(\n\x06\x61ttest\x12\n.rpc.Empty\x1a\x10.rpc.Attestation\"\x00\x12#\n\x06status\x12\n.rpc.Empty\x1a\x0b.rpc.Status\"\x00\x12(\n\x07process\x12\x0c.rpc.Request\x1a\r.rpc.Response\"\x00\x12&\n\x0bparticipate\x12\t.rpc.Data\x1a\n.rpc.Empty\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x08tc.proto\x12\x03rpc\"\x14\n\x04\x44\x61ta\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\t\"?\n\x0b\x41ttestation\x12\r\n\x05quote\x18\x01 \x01(\t\x12\x12\n\nmr_enclave\x18\x02 \x01(\t\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"\x19\n\x06Status\x12\x0f\n\x07version\x18\x01 \x01(\t\"@\n\x07Request\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x0c\n\x04type\x18\x02 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\r\n\x05nonce\x18\x04 \x01(\x04\"3\n\x08Response\x12\x12\n\nerror_code\x18\x01 \x01(\r\x12\x13\n\x0bresponse_tx\x18\x02 \x01(\x0c\"\x07\n\x05\x45mpty2\xce\x01\n\ttowncrier\x12(\n\x06\x61ttest\x12\n.rpc.Empty\x1a\x10.rpc.Attestation\"\x00\x12#\n\x06status\x12\n.rpc.Empty\x1a\x0b.rpc.Status\"\x00\x12(\n\x07process\x12\x0c.rpc.Request\x1a\r.rpc.Response\"\x00\x12&\n\x0bparticipate\x12\t.rpc.Data\x1a\n.rpc.Empty\"\x00\x12 \n\x06id_nft\x12\t.rpc.Data\x1a\t.rpc.Data\"\x00\x62\x06proto3'
 )
 
 
@@ -34,22 +34,8 @@ _DATA = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='source', full_name='rpc.Data.source', index=0,
-      number=1, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='addr', full_name='rpc.Data.addr', index=1,
-      number=2, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"",
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='data', full_name='rpc.Data.data', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='data', full_name='rpc.Data.data', index=0,
+      number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -67,7 +53,7 @@ _DATA = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=17,
-  serialized_end=67,
+  serialized_end=37,
 )
 
 
@@ -112,8 +98,8 @@ _ATTESTATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=69,
-  serialized_end=132,
+  serialized_start=39,
+  serialized_end=102,
 )
 
 
@@ -144,8 +130,8 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=134,
-  serialized_end=159,
+  serialized_start=104,
+  serialized_end=129,
 )
 
 
@@ -197,8 +183,8 @@ _REQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=161,
-  serialized_end=225,
+  serialized_start=131,
+  serialized_end=195,
 )
 
 
@@ -236,8 +222,8 @@ _RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=227,
-  serialized_end=278,
+  serialized_start=197,
+  serialized_end=248,
 )
 
 
@@ -261,8 +247,8 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=280,
-  serialized_end=287,
+  serialized_start=250,
+  serialized_end=257,
 )
 
 DESCRIPTOR.message_types_by_name['Data'] = _DATA
@@ -324,8 +310,8 @@ _TOWNCRIER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=290,
-  serialized_end=462,
+  serialized_start=260,
+  serialized_end=466,
   methods=[
   _descriptor.MethodDescriptor(
     name='attest',
@@ -364,6 +350,16 @@ _TOWNCRIER = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_DATA,
     output_type=_EMPTY,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='id_nft',
+    full_name='rpc.towncrier.id_nft',
+    index=4,
+    containing_service=None,
+    input_type=_DATA,
+    output_type=_DATA,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

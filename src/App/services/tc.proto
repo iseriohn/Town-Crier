@@ -7,12 +7,11 @@ service towncrier {
   rpc status(Empty) returns (Status) {}
   rpc process(Request) returns (Response) {}
   rpc participate(Data) returns (Empty) {}
+  rpc id_nft(Data) returns (Data) {}
 }
 
 message Data {
-    uint32 source = 1;
-    bytes addr = 2;
-    string data = 3;
+    string data = 1;
 }
 
 message Attestation {

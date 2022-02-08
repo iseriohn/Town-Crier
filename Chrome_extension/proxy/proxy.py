@@ -13,7 +13,7 @@ import web3
 
 #import subprocess
 #command = './hybrid-enc/henc'
-#sgx_pk = 'BLtIrjcmxXNzRKVLNGP+xJnLEIp9EboTe6PH0EO9bX4UmU9gRio/kVUHSbsq5UEfIrf5vueZVqRjwwitUI81V98=' 
+#sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 sgx_server = 'localhost:12345'
 proxy_port = 9001
 proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
@@ -38,14 +38,14 @@ def encrypt(msg):
 def rpc_call(data):
     channel = grpc.insecure_channel(sgx_server, options=(('grpc.enable_http_proxy', 0),))
     stub = tc_pb2_grpc.towncrierStub(channel)
-    message = tc_pb2.Data(source = 0, addr = wallet_addr, data = data)
+    message = tc_pb2.Data(data = data)
     res = stub.participate(message)
 
 
 async def request(websocket, path):
     data = await websocket.recv()
-    rpc_call(data)
     print("Received data: ", data)
+    rpc_call(data)
 
 
 if __name__ == "__main__":
