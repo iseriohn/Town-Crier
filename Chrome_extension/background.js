@@ -31,6 +31,20 @@ function str2ab(str) {
   return buf;
 }
 
+function hexStringToByte(str) {
+  if (!str) {
+    return new Uint8Array();
+  }
+
+  var a = [];
+  for (var i = 0, len = str.length; i < len; i+=2) {
+    a.push(parseInt(str.substr(i,2),16));
+  }
+
+  return new Uint8Array(a);
+}
+
+
 async function exportCryptoKey(format, key) {
   const exported = await crypto.subtle.exportKey(
     format,
@@ -185,12 +199,12 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
   chrome.tabs.create({url:"popup.html"}, function(tab) {
     console.log(tab.id);
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      contract = removePrefix(request.contract);
-      wallet = removePrefix(request.wallet);
+      contract = hexStringToByte(removePrefix(request.contract));
+      wallet = hexStringToByte(removePrefix(request.wallet));
       console.log(contract);
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
-      encodedMsg = new Uint8Array([source, ...encoder.encode(data)]);
+      encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
       encryptAndSend(encodedMsg);
     });
   });
