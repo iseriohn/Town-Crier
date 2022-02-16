@@ -1,23 +1,3 @@
-/*
-function sendRequest(data) {
-  const grpc = require('grpc');
-
-  const protoPath = require('path').join(__dirname);
-  const proto = grpc.load({root: protoPath, file: 'tc.proto' });
-
-  //Create a new client instance that binds to the IP and port of the grpc server.
-  const client = new proto.rpc.towncrier('128.84.84.208:12345', grpc.credentials.createInsecure());
-
-  client.participate(data, (error, response) => {
-    if (!error) {
-      console.log("Succeed!");
-    } else {
-      console.log("Error:", error.message);
-    }
-  });
-}
-*/
-
 function ab2str(buf) {
   return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
@@ -85,8 +65,6 @@ async function aesEnc(key, msg) {
     true,
     ["deriveKey"]
   );
-  // var pubKey = await exportCryptoKey("raw", keyPair.publicKey);
-  // var secKey = await exportCryptoKey("pkcs8", keyPair.privateKey);
   var pubKey = await crypto.subtle.exportKey("raw", keyPair.publicKey);
   pubKey = new Uint8Array(pubKey);
  
@@ -128,13 +106,6 @@ async function aesEnc(key, msg) {
   return cipher;
 } /* end aesEnc() */
 
-/*
-try {
-  importScripts('./aes4js.js');
-} catch (e) {
-  console.error(e);
-}
-*/
 
 function encryptAndSend(msg, tabId) {
   var ws = new WebSocket(addr);
@@ -181,20 +152,10 @@ const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZm
 
 const source_dict = {
     "https://secure.ssa.gov/myssa/myprofi": 12,
-    "https://accounts.coinbase.com/api/v1": 13,
-    "https://onlinebanking.mtb.com/Accoun": 14,
-    "https://secure01b.chase.com/svc/rr/p": 15,
-    "https://api.spotify.com/v1/playlists": 16,
-    "https://otc.tax.ny.gov/webapp/wcs/st": 17,
 }
 
 const networkFilters = {
   urls: [
-    "https://accounts.coinbase.com/api/v1/user",
-    "https://onlinebanking.mtb.com/Accounts/FetchAccountSummary*",
-    "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
-    "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list",
-    "https://api.spotify.com/v1/playlists/*",
     "https://secure.ssa.gov/myssa/myprofile-api/profileInfo"
   ]
 };
