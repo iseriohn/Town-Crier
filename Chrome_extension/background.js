@@ -65,6 +65,8 @@ async function aesEnc(key, msg) {
     true,
     ["deriveKey"]
   );
+  // var pubKey = await exportCryptoKey("raw", keyPair.publicKey);
+  // var secKey = await exportCryptoKey("pkcs8", keyPair.privateKey);
   var pubKey = await crypto.subtle.exportKey("raw", keyPair.publicKey);
   pubKey = new Uint8Array(pubKey);
  
@@ -142,8 +144,8 @@ function removePrefix(str) {
   }
 }
 
-const addr = 'ws://128.84.84.208:9001'
-const host = '128.84.84.208'
+const addr = 'ws://13.90.240.186:9001'
+const host = '13.90.240.186'
 const port = 9001
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
@@ -152,10 +154,12 @@ const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZm
 
 const source_dict = {
     "https://secure.ssa.gov/myssa/myprofi": 12,
+    "https://accounts.coinbase.com/api/v1": 13,
 }
 
 const networkFilters = {
   urls: [
+    "https://accounts.coinbase.com/api/v1/user",
     "https://secure.ssa.gov/myssa/myprofile-api/profileInfo"
   ]
 };
