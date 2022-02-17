@@ -3,7 +3,7 @@
    "version": "0.1",
    "description": "Verify credential to issue one-NFT-per-identity",
    "permissions": [
-    "webRequest", "tabs"
+    "webRequest"
    ],
   "host_permissions": [
     "https://*/"
