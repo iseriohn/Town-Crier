@@ -14,21 +14,22 @@ import web3
 #import subprocess
 #command = './hybrid-enc/henc'
 #sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
-sgx_server = 'localhost:12345'
+#sgx_server = 'localhost:12345'
+sgx_server = 'localhost:8123'
 proxy_port = 9001
 proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
 
 #wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
 
 
-source_dict = {
-    "https://secure.ssa.gov/myssa/myprofi": 12,
-    "https://accounts.coinbase.com/api/v1": 13,
-    "https://onlinebanking.mtb.com/Accoun": 14,
-    "https://secure01b.chase.com/svc/rr/p": 15,
-    "https://api.spotify.com/v1/playlists": 16,
-    "https://otc.tax.ny.gov/webapp/wcs/st": 17,
-}
+#source_dict = {
+#    "https://secure.ssa.gov/myssa/myprofi": 12,
+#    "https://accounts.coinbase.com/api/v1": 13,
+#    "https://onlinebanking.mtb.com/Accoun": 14,
+#    "https://secure01b.chase.com/svc/rr/p": 15,
+#    "https://api.spotify.com/v1/playlists": 16,
+#    "https://otc.tax.ny.gov/webapp/wcs/st": 17,
+#}
 
 def encrypt(msg):
     output = subprocess.check_output([command, sgx_pk, msg])
