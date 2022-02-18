@@ -141,7 +141,7 @@ function encryptAndSend(msg, tabId) {
   ws.onopen = function(evt) {
     encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
       console.log(encrypted);
-      ws.send(encrypted);
+      ws.send(encrypted); // comment for testing
     });
   };
 
@@ -217,12 +217,13 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       if (sender.tab.id != tab.id) return;
       chrome.runtime.onMessage.removeListener();
-      contract = hexStringToByte(removePrefix(request.contract));
+      // contract = hexStringToByte(removePrefix(request.contract));
       wallet = hexStringToByte(removePrefix(request.wallet));
-      console.log(contract);
+      // console.log(contract);
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
-      encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
+      // encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
+      encodedMsg = new Uint8Array([...wallet, source, ...encoder.encode(data)]);
       encryptAndSend(encodedMsg, tab.id);
       return true;
     });
