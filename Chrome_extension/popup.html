@@ -1,9 +1,12 @@
 <html >
     <head>
-        <script src="popup.js"></script>
     </head>
     <body>
-        <h1>Request for Identity NFT sent!</h1>
+        <h1>What is your wallet address for receiving the Identity NFT?</h1>
+        <input type="text" name="addressInput" id="addressInput" minlength="5" maxlength="42">
+        <button id="myButton">Sumbit</button>
+        <h1 id="status"></h1>
         <h2 id="signature"></h2>
+        <script src="popup.js"></script>
     </body>
 </html>
