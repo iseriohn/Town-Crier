@@ -30,7 +30,6 @@ function byteToHexString(byteArray) {
   byteArray.forEach(function(byte) {
     s += ('0' + (byte & 0xFF).toString(16)).slice(-2);
   });
-  console.log(s);
   return s;
 }
 
@@ -104,7 +103,7 @@ async function aesEnc(key, msg) {
   cipher.set(encrypted.slice(-16), pubKey.length + iv.length);
   cipher.set(encrypted.slice(0, encrypted.length - 16), pubKey.length + iv.length + 16);
   cipher = btoa(ab2str(cipher));
-  console.log(cipher);
+  //console.log(cipher);
   return cipher;
 } /* end aesEnc() */
 
@@ -113,7 +112,7 @@ function encryptAndSend(msg, tabId) {
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
     encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
-      console.log(encrypted);
+      //console.log(encrypted);
       ws.send(encrypted);
     });
   };
@@ -144,13 +143,9 @@ function removePrefix(str) {
   }
 }
 
-const addr = 'ws://13.90.240.186:9001'
-const host = '13.90.240.186'
-const port = 9001
+const addr = 'ws://20.106.154.181:9001'
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
-
-
 
 const source_dict = {
     "https://secure.ssa.gov/myssa/myprofi": 12,
@@ -184,8 +179,6 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       chrome.runtime.onMessage.removeListener();
       contract = hexStringToByte(removePrefix(request.contract));
       wallet = hexStringToByte(removePrefix(request.wallet));
-      console.log(contract);
-      console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
       encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
       encryptAndSend(encodedMsg, tab.id);
