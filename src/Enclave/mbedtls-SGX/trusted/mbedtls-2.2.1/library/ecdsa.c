@@ -128,7 +128,10 @@ int mbedtls_ecdsa_sign( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
 
             /* See mbedtls_ecp_gen_keypair() */
             if( ++blind_tries > 30 )
-                return( MBEDTLS_ERR_ECP_RANDOM_FAILED );
+            {
+                ret = MBEDTLS_ERR_ECP_RANDOM_FAILED;
+                goto cleanup;
+            }
         }
         while( mbedtls_mpi_cmp_int( &t, 1 ) < 0 ||
                mbedtls_mpi_cmp_mpi( &t, &grp->N ) >= 0 );
@@ -231,8 +234,10 @@ int mbedtls_ecdsa_sign_with_v( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_m
             MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( &t, 8 * n_size - grp->nbits ) );
 
             /* See mbedtls_ecp_gen_keypair() */
-            if( ++blind_tries > 30 )
-                return( MBEDTLS_ERR_ECP_RANDOM_FAILED );
+            if( ++blind_tries > 30 ) {
+                ret = MBEDTLS_ERR_ECP_RANDOM_FAILED;
+                goto cleanup;
+            }
         }
         while( mbedtls_mpi_cmp_int( &t, 1 ) < 0 ||
                mbedtls_mpi_cmp_mpi( &t, &grp->N ) >= 0 );
@@ -260,7 +265,7 @@ int mbedtls_ecdsa_sign_with_v( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_m
         mbedtls_mpi_sub_abs(s, &grp->N, s);
         *v ^= 1;
     }
-
+    
     *v += 27;
 
 cleanup:
@@ -340,7 +345,10 @@ int mbedtls_ecdsa_sign_bitcoin( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_
     MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &h, data + grp_len, grp_len ) );
     /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
     if( grp->N.p == NULL )
-        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
+    {
+        ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+        goto cleanup;
+    }
 
 
     sign_tries = 0;
@@ -389,8 +397,11 @@ int mbedtls_ecdsa_sign_bitcoin( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_
             MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( &t, 8 * n_size - grp->nbits ) );
 
             /* See mbedtls_ecp_gen_keypair() */
-            if( ++blind_tries > 30 )
-                return( MBEDTLS_ERR_ECP_RANDOM_FAILED );
+            if( ++blind_tries > 30 ) 
+            {
+                ret = MBEDTLS_ERR_ECP_RANDOM_FAILED;
+                goto cleanup;
+            }
         }
         while( mbedtls_mpi_cmp_int( &t, 1 ) < 0 ||
                mbedtls_mpi_cmp_mpi( &t, &grp->N ) >= 0 );
@@ -435,13 +446,14 @@ int mbedtls_ecdsa_verify( mbedtls_ecp_group *grp,
     int ret;
     mbedtls_mpi e, s_inv, u1, u2;
     mbedtls_ecp_point R;
+    
+    /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
+    if( grp->N.p == NULL )
+        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
 
     mbedtls_ecp_point_init( &R );
     mbedtls_mpi_init( &e ); mbedtls_mpi_init( &s_inv ); mbedtls_mpi_init( &u1 ); mbedtls_mpi_init( &u2 );
 
-    /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
-    if( grp->N.p == NULL )
-        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
 
     /*
      * Step 1: make sure r and s are in range 1..n-1
@@ -506,6 +518,101 @@ int mbedtls_ecdsa_verify( mbedtls_ecp_group *grp,
 cleanup:
     mbedtls_ecp_point_free( &R );
     mbedtls_mpi_free( &e ); mbedtls_mpi_free( &s_inv ); mbedtls_mpi_free( &u1 ); mbedtls_mpi_free( &u2 );
+
+    return( ret );
+}
+
+int mbedtls_ecdsa_verify_with_v( mbedtls_ecp_group *grp,
+                  const unsigned char *buf, size_t blen,
+                  const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s, const uint8_t v)
+{
+    int ret;
+    mbedtls_mpi e, s_inv, u1, u2, vv;
+    mbedtls_ecp_point R;
+    
+    /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
+    if( grp->N.p == NULL )
+        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
+
+    mbedtls_ecp_point_init( &R );
+    mbedtls_mpi_init( &e ); mbedtls_mpi_init( &s_inv ); mbedtls_mpi_init( &u1 ); mbedtls_mpi_init( &u2 );
+    mbedtls_mpi_init( &vv );
+
+    mbedtls_mpi tmp;
+    mbedtls_mpi halfN;
+    mbedtls_mpi_init(&tmp);
+    mbedtls_mpi_init(&halfN);
+    mbedtls_mpi_div_int(&halfN, &tmp, &grp->N, 2); 
+
+    if (v < 27 || v > 30 || mbedtls_mpi_cmp_abs(s, &halfN) == 1) {
+        ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
+        goto cleanup;
+    }
+
+    /*
+     * Step 1: make sure r and s are in range 1..n-1
+     */
+    if( mbedtls_mpi_cmp_int( r, 1 ) < 0 || mbedtls_mpi_cmp_mpi( r, &grp->N ) >= 0 ||
+        mbedtls_mpi_cmp_int( s, 1 ) < 0 || mbedtls_mpi_cmp_mpi( s, &grp->N ) >= 0 )
+    {
+        ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
+        goto cleanup;
+    }
+
+    /*
+     * Additional precaution: make sure Q is valid
+     */
+    MBEDTLS_MPI_CHK( mbedtls_ecp_check_pubkey( grp, Q ) );
+
+    /*
+     * Step 3: derive MPI from hashed message
+     */
+    MBEDTLS_MPI_CHK( derive_mpi( grp, &e, buf, blen ) );
+
+    /*
+     * Step 4: u1 = e / s mod n, u2 = r / s mod n
+     */
+    MBEDTLS_MPI_CHK( mbedtls_mpi_inv_mod( &s_inv, s, &grp->N ) );
+
+    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &u1, &e, &s_inv ) );
+    MBEDTLS_MPI_CHK( mbedtls_mpi_mod_mpi( &u1, &u1, &grp->N ) );
+
+    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &u2, r, &s_inv ) );
+    MBEDTLS_MPI_CHK( mbedtls_mpi_mod_mpi( &u2, &u2, &grp->N ) );
+
+    /*
+     * Step 5: R = u1 G + u2 Q
+     *
+     * Since we're not using any secret data, no need to pass a RNG to
+     * mbedtls_ecp_mul() for countermesures.
+     */
+    MBEDTLS_MPI_CHK( mbedtls_ecp_muladd( grp, &R, &u1, &grp->G, &u2, Q ) );
+
+    if( mbedtls_ecp_is_zero( &R ) )
+    {
+        ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
+        goto cleanup;
+    }
+
+    /*
+     * Step 6: convert xR to an integer (no-op)
+     * Step 7: reduce xR mod n (gives v)
+     */
+    MBEDTLS_MPI_CHK( mbedtls_mpi_mod_mpi( &R.X, &R.X, &grp->N ) );
+
+    /*
+     * Step 8: check if v (that is, R.X) is equal to r
+     */
+    if( mbedtls_mpi_cmp_mpi( &R.X, r ) != 0 )
+    {
+        ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
+        goto cleanup;
+    }
+
+cleanup:
+    mbedtls_ecp_point_free( &R );
+    mbedtls_mpi_free( &e ); mbedtls_mpi_free( &s_inv ); mbedtls_mpi_free( &u1 ); mbedtls_mpi_free( &u2 );
+    mbedtls_mpi_free(&tmp); mbedtls_mpi_free(&halfN);
 
     return( ret );
 }

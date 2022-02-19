@@ -48,7 +48,7 @@
 #ifndef APP_LOG_H
 #define APP_LOG_H
 
-constexpr auto LOGGING_CONF_FILE = "/tc/conf/logging.conf";
+constexpr auto LOGGING_CONF_FILE = "/home/yan/Town-Crier/tc/conf/logging.conf";
 
 // define _FALSE as a universal false for C++/C
 #ifdef __cplusplus

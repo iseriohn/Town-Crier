@@ -69,6 +69,7 @@
 
 #define TYPE_SSA            0xC
 #define TYPE_COINBASE       0xD
+#define TYPE_POAP           0xE
 
 /* Possible return values to be used in Enclave-Relay Connections */
 #define TC_SUCCESS          0x0
@@ -81,5 +82,11 @@
 #define TC_ERR_FLAG_NO_ERROR      0
 #define TC_ERR_FLAG_INVALID_INPUT 1
 #define TC_ERR_FLAG_INTERNAL_ERR  2
+
+/* definition of id_nft return status */
+#define ID_EXISTS 0
+#define NEW_ID 1
+#define POAP_NOT_FOUND 2
+#define INVALID_QUERY 3
 
 #endif

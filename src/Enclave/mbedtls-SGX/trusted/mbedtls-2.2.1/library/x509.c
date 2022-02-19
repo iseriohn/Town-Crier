@@ -76,7 +76,7 @@
 #endif
 #endif
 
-#include "sgx_tae_service.h" // for timing stuff
+//#include "sgx_tae_service.h" // for timing stuff
 
 #define CHECK(code) if( ( ret = code ) != 0 ){ return( ret ); }
 

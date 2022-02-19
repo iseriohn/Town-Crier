@@ -304,7 +304,7 @@ int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss,
                uint8_t *vv) {
   int ret;
   mbedtls_ecdsa_context ctx_sign, ctx_verify;
-  mbedtls_entropy_context entropy;
+  //mbedtls_entropy_context entropy;
   mbedtls_ctr_drbg_context ctr_drbg;
   mbedtls_mpi r, s;
 
@@ -319,18 +319,21 @@ int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss,
   if (g_secret_key.p == NULL) {
     LL_CRITICAL(
         "signing key not provisioned yet. Call tc_provision_key() first");
-    return -1;
+    ret = -1;
+    goto exit;
   }
   ret = mbedtls_mpi_copy(&ctx_sign.d, &g_secret_key);
   if (ret != 0) {
     LL_CRITICAL("Error: mbedtls_mpi_copy returned %d", ret);
-    return -1;
+    ret = -1;
+    goto exit;
   }
   ret = mbedtls_ecp_mul(&ctx_sign.grp, &ctx_sign.Q, &ctx_sign.d,
                         &ctx_sign.grp.G, NULL, NULL);
   if (ret != 0) {
     LL_CRITICAL("Error: mbedtls_ecp_mul returned %d", ret);
-    return -1;
+    ret = -1;
+    goto exit;
   }
 
   ret = mbedtls_ecdsa_sign_with_v(&ctx_sign.grp, &r, &s, vv, &ctx_sign.d, data,
@@ -343,7 +346,7 @@ int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss,
   mbedtls_mpi_write_binary(&r, rr, 32);
   mbedtls_mpi_write_binary(&s, ss, 32);
 
-  ret = mbedtls_ecdsa_verify(&ctx_sign.grp, data, in_len, &ctx_sign.Q, &r, &s);
+  ret = mbedtls_ecdsa_verify_with_v(&ctx_sign.grp, data, in_len, &ctx_sign.Q, &r, &s, *vv);
   if (ret != 0) {
     LL_CRITICAL("Error: mbedtls_ecdsa_verify returned %#x", ret);
     goto exit;
@@ -359,7 +362,62 @@ int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss,
   mbedtls_ecdsa_free(&ctx_verify);
   mbedtls_ecdsa_free(&ctx_sign);
   mbedtls_ctr_drbg_free(&ctr_drbg);
-  mbedtls_entropy_free(&entropy);
+  //mbedtls_entropy_free(&entropy);
+  mbedtls_mpi_free(&r);
+  mbedtls_mpi_free(&s);
+  return (ret);
+}
+
+
+int ecdsa_verify(const uint8_t *data, size_t in_len, const uint8_t *pubkey, const uint8_t *rr, const uint8_t *ss,
+               uint8_t vv) {
+  int ret;
+  mbedtls_ecdsa_context ctx_verify;
+  mbedtls_mpi r, s;
+
+  mbedtls_mpi_init(&r);
+  mbedtls_mpi_init(&s);
+  mbedtls_ecdsa_init(&ctx_verify);
+  
+  ret = mbedtls_mpi_read_binary(&r, rr, 32);
+  if (ret != 0) {
+    LL_INFO("Error: mbedtls_mpi_read_binary returned %d", ret);
+    ret = -1;
+    goto exit;
+  }
+  ret = mbedtls_mpi_read_binary(&s, ss, 32);
+  if (ret != 0) {
+    LL_INFO("Error: mbedtls_mpi_read_binary returned %d", ret);
+    ret = -1;
+    goto exit;
+  }
+  
+  mbedtls_ecp_group_load(&ctx_verify.grp, ECPARAMS);
+  ret = mbedtls_ecp_point_read_binary(&ctx_verify.grp, &ctx_verify.Q, pubkey, 65);
+  if (ret != 0) {
+    LL_INFO("Error: mbedtls_ecp_point_read_binary returned %d", ret);
+    ret = -1;
+    goto exit;
+  }
+
+  ret = mbedtls_ecp_check_pubkey(&ctx_verify.grp, &ctx_verify.Q);
+  if (ret != 0) {
+    LL_INFO("Error: mbedtls_ecp_check_pubkey returned %d", ret);
+  }
+
+  ret = mbedtls_ecdsa_verify_with_v(&ctx_verify.grp, data, 32, &ctx_verify.Q, &r, &s, vv);
+  if (ret != 0) {
+    LL_INFO("Error: mbedtls_ecdsa_verify returned %#x", ret);
+    goto exit;
+  }
+
+exit:
+  if (ret != 0) {
+    char error_buf[100];
+    mbedtls_strerror(ret, error_buf, 100);
+    LL_DEBUG("Last error was: -0x%X - %s", -ret, error_buf);
+  }
+  mbedtls_ecdsa_free(&ctx_verify);
   mbedtls_mpi_free(&r);
   mbedtls_mpi_free(&s);
   return (ret);
