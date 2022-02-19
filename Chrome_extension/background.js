@@ -1,23 +1,3 @@
-/*
-function sendRequest(data) {
-  const grpc = require('grpc');
-
-  const protoPath = require('path').join(__dirname);
-  const proto = grpc.load({root: protoPath, file: 'tc.proto' });
-
-  //Create a new client instance that binds to the IP and port of the grpc server.
-  const client = new proto.rpc.towncrier('128.84.84.208:12345', grpc.credentials.createInsecure());
-
-  client.participate(data, (error, response) => {
-    if (!error) {
-      console.log("Succeed!");
-    } else {
-      console.log("Error:", error.message);
-    }
-  });
-}
-*/
-
 function ab2str(buf) {
   return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
@@ -50,7 +30,6 @@ function byteToHexString(byteArray) {
   byteArray.forEach(function(byte) {
     s += ('0' + (byte & 0xFF).toString(16)).slice(-2);
   });
-  console.log(s);
   return s;
 }
 
@@ -124,33 +103,27 @@ async function aesEnc(key, msg) {
   cipher.set(encrypted.slice(-16), pubKey.length + iv.length);
   cipher.set(encrypted.slice(0, encrypted.length - 16), pubKey.length + iv.length + 16);
   cipher = btoa(ab2str(cipher));
-  console.log(cipher);
+  //console.log(cipher);
   return cipher;
 } /* end aesEnc() */
 
-/*
-try {
-  importScripts('./aes4js.js');
-} catch (e) {
-  console.error(e);
-}
-*/
 
 function encryptAndSend(msg, tabId) {
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
     encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
       console.log(encrypted);
-      ws.send(encrypted);
+      ws.send(encrypted); // comment for testing
     });
   };
 
   ws.onmessage = function(evt) {
     console.log( "Received Message: " + evt.data);
-    decoded = new Uint8Array(str2ab(atob(evt.data)))
-    resp = decoded[0].toString() + ", ";
-    resp = resp + "0x" + byteToHexString(decoded.slice(1, 33)) + ", ";
-    resp = resp + "0x" + byteToHexString(decoded.slice(33, 65));
+    //decoded = new Uint8Array(str2ab(atob(evt.data)))
+    //resp = decoded[0].toString() + ", ";
+    //resp = resp + "0x" + byteToHexString(decoded.slice(1, 33)) + ", ";
+    //resp = resp + "0x" + byteToHexString(decoded.slice(33, 65));
+    resp = evt.data;
 
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       chrome.tabs.sendMessage(tabs[0].id, resp);
@@ -171,30 +144,18 @@ function removePrefix(str) {
   }
 }
 
-const addr = 'ws://128.84.84.208:9001'
-const host = '128.84.84.208'
-const port = 9001
+const addr = 'ws://20.106.154.181:9001'
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
-
-
 
 const source_dict = {
     "https://secure.ssa.gov/myssa/myprofi": 12,
     "https://accounts.coinbase.com/api/v1": 13,
-    "https://onlinebanking.mtb.com/Accoun": 14,
-    "https://secure01b.chase.com/svc/rr/p": 15,
-    "https://api.spotify.com/v1/playlists": 16,
-    "https://otc.tax.ny.gov/webapp/wcs/st": 17,
 }
 
 const networkFilters = {
   urls: [
     "https://accounts.coinbase.com/api/v1/user",
-    "https://onlinebanking.mtb.com/Accounts/FetchAccountSummary*",
-    "https://otc.tax.ny.gov/webapp/wcs/stores/service/*",
-    "https://secure01b.chase.com/svc/rr/profile/secure/v1/address/profile/list",
-    "https://api.spotify.com/v1/playlists/*",
     "https://secure.ssa.gov/myssa/myprofile-api/profileInfo"
   ]
 };
@@ -217,12 +178,13 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       if (sender.tab.id != tab.id) return;
       chrome.runtime.onMessage.removeListener();
-      contract = hexStringToByte(removePrefix(request.contract));
+      // contract = hexStringToByte(removePrefix(request.contract));
       wallet = hexStringToByte(removePrefix(request.wallet));
-      console.log(contract);
+      // console.log(contract);
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
-      encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
+      // encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
+      encodedMsg = new Uint8Array([...wallet, source, ...encoder.encode(data)]);
       encryptAndSend(encodedMsg, tab.id);
       return true;
     });
