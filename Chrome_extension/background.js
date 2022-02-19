@@ -108,12 +108,13 @@ async function aesEnc(key, msg) {
 } /* end aesEnc() */
 
 
-function encryptAndSend(msg, tabId) {
+function encryptAndSendWs(msg, tabId) {
   var ws = new WebSocket(addr);
   ws.onopen = function(evt) {
     encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
       console.log(encrypted);
       ws.send(encrypted); // comment for testing
+      //ws.send(encrypted.slice(0, 20)); // testing invalid query
     });
   };
 
@@ -136,6 +137,28 @@ function encryptAndSend(msg, tabId) {
   };
 }
 
+function encryptAndSendHttps(msg, tabId) {
+  encrypted = aesEnc(sgx_pk, msg).then(encrypted => {
+    console.log(encrypted);
+    fetch(https_url, {
+      method: 'POST', // *GET, POST, PUT, DELETE, etc.
+      body: JSON.stringify(encrypted) // body data type must match "Content-Type" header
+    })
+      .then(response => {
+        response.text().then(text => {
+          console.log(text);
+          
+          chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, text);
+          });
+        });
+      })
+      .catch(err => {
+        console.log(err)
+      });
+  });
+}
+
 function removePrefix(str) {
   if (str.substring(0, 2) === "0x") {
     return str.substring(2);
@@ -145,6 +168,7 @@ function removePrefix(str) {
 }
 
 const addr = 'ws://20.106.154.181:9001'
+const https_url = 'https://sgx.candid.id'
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 
@@ -183,9 +207,8 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       // console.log(contract);
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
-      // encodedMsg = new Uint8Array([...contract, ...wallet, source, ...encoder.encode(data)]);
       encodedMsg = new Uint8Array([...wallet, source, ...encoder.encode(data)]);
-      encryptAndSend(encodedMsg, tab.id);
+      encryptAndSendHttps(encodedMsg, tab.id);
       return true;
     });
   });
