@@ -59,6 +59,7 @@
 #include "scrapers/bitcoinfees.h"
 #include "scrapers/current_weather.h"
 #include "scrapers/wolfram.h"
+#include "scrapers/poap.h"
 #include "eth_transaction.h"
 #include "eth_ecdsa.h"
 #include "eth_abi.h"
@@ -72,11 +73,8 @@
 #include "hybrid_cipher.h"
 #include "env.h"
 
-
-const string ETH_HASH_PREFIX = string("\x19") + "Ethereum Signed Message:\n40";
-
 /*
-data format: contract addr (20 bytes) || user wallet (20 bytes) || source (1 byte) || data
+data format: user wallet (20 bytes) || source (1 byte) || data
 */
 int identity_token(
                    unsigned char* sealed_data, 
@@ -85,135 +83,151 @@ int identity_token(
                    size_t dataset_len,
                    unsigned char* newdata,
                    size_t* newdata_len,
-                   unsigned char* signature) {
+                   int* resp) {
+                   //unsigned char* signature) {
   string plain;
   try {  
     plain = decrypt_query(sealed_data, sealed_data_len);
   }
   catch (const std::exception &e) {
-    LL_CRITICAL("exception while handling request: %s", e.what());
+    LL_INFO("exception while decrypting request: %s", e.what());
+    *resp = INVALID_QUERY;
+    return 0;
   }
   LL_INFO("Sealed HTTP header decrypted.");
   
   auto data = plain.c_str();
   auto data_len = plain.size();
-  if (data_len < 41) {
-    LL_INFO("Invalid query format. Please send your query as [contract address]||[wallet address]||[source]||[data]");
+  if (data_len < 21) {
+    LL_INFO("Invalid query format. Please send your query as [wallet address]||[source]||[data]");
+    *resp = INVALID_QUERY;
     return 0;
   }
-  unsigned char contract_addr[20];
-  memcpy(contract_addr, data, 20);
   unsigned char wallet_addr[20];
-  memcpy(wallet_addr, data + 20, 20);
-  auto source = data[40];
-  data = data + 41;
-  data_len -= 41;
+  memcpy(wallet_addr, data, 20);
+  auto source = data[20];
+  data = data + 21;
+  data_len -= 21;
   LL_DEBUG("Source: %d", source);
-  LL_DEBUG("Contract address: 0x%s", ucharToHexString(contract_addr, 20).c_str());
   LL_DEBUG("Wallet address: 0x%s", ucharToHexString(wallet_addr, 20).c_str());
   LL_DEBUG("Decrypted HTTP header: %s", data);
   
-  unsigned char contract_credential[100];
-  memcpy(contract_credential, contract_addr, 20);
-
-  char resp[500] = {0};
+  char http_resp[500] = {0};
   switch (source) {
     case TYPE_SSA: {
       SSAScraper scraper;
-      switch (scraper.handle_long_resp(data, data_len, resp)) {
-        case UNKNOWN_ERROR:
-          return TC_UNKNOWN_ERROR;
-        case WEB_ERROR:
-          return TC_INTERNAL_ERROR;
-        case INVALID_PARAMS:
-          return TC_INPUT_ERROR;
+      switch (scraper.handle_long_resp(data, data_len, http_resp)) {
         case NO_ERROR:
           break;
+        default: {
+          *resp = INVALID_QUERY;
+          return 0;
+        }
       }
       break;
     }
     case TYPE_COINBASE: {
       CoinbaseScraper scraper;
-      switch (scraper.handle_long_resp(data, data_len, resp)) {
-        case UNKNOWN_ERROR:
-          return TC_UNKNOWN_ERROR;
-        case WEB_ERROR:
-          return TC_INTERNAL_ERROR;
-        case INVALID_PARAMS:
-          return TC_INPUT_ERROR;
+      switch (scraper.handle_long_resp(data, data_len, http_resp)) {
         case NO_ERROR:
           break;
+        default: {
+          *resp = INVALID_QUERY;
+          return 0;
+        }
       }
       break;
     }
-  }
-  LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(resp), resp);
-
-  string credential = (char*)resp;
-  memcpy(contract_credential + 20, credential.c_str(), credential.size());
-
-  // key: [contract addr] || [credential]; value: [wallet addr]
-  bool new_identity = true;
-  string sealed = (char*)dataset;
-  size_t start = 0;
-  size_t pos = sealed.find("\n");
-  while (pos != std::string::npos) {
-    unsigned char secret_sealed[2000];
-    size_t buffer_used = (size_t)ext::b64_pton(sealed.substr(start, pos - start).c_str(),
-                                               secret_sealed,
-                                               sizeof secret_sealed);
-
-    auto secret = reinterpret_cast<sgx_sealed_data_t*>(secret_sealed);
-    uint32_t decrypted_text_length = sgx_get_encrypt_txt_len(secret);
-    uint8_t decrypted_text[decrypted_text_length];
-    sgx_status_t st;
-
-    st = sgx_unseal_data(secret, NULL, 0, decrypted_text, &decrypted_text_length);
-    if (st != SGX_SUCCESS) {
-      return -1;
+    case TYPE_POAP: {
+      PoapScraper scraper;
+      switch (scraper.handle_long_resp(data, data_len, http_resp)) {
+        case NO_ERROR:
+          break;
+        case INVALID_PARAMS: {
+          *resp = POAP_NOT_FOUND;
+          return 0;
+        }
+        default: {
+          *resp = INVALID_QUERY;
+          return 0;
+        }
+      }
+      break;
     }
+    default: {
+      *resp = INVALID_QUERY;
+      return 0;
+    }
+  }
+  LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(http_resp), http_resp);
+  string credential = (char*)http_resp;
 
-    string entry = (char*)decrypted_text;
-    try {
-      auto sep_pose = entry.find(":", 20);
-      if (sep_pose == 20 + credential.size() && memcmp(decrypted_text, contract_credential, sep_pose) == 0) {
+  // data_entry: "[wallet addr]:[credential]"
+  try {
+    bool new_identity = true;
+    string sealed = (char*)dataset;
+    size_t start = 0;
+    size_t pos = sealed.find("\n");
+    while (pos != std::string::npos) {
+      unsigned char secret_sealed[2000];
+      size_t buffer_used = (size_t)ext::b64_pton(sealed.substr(start, pos - start).c_str(),
+          secret_sealed,
+          sizeof secret_sealed);
+
+      auto secret = reinterpret_cast<sgx_sealed_data_t*>(secret_sealed);
+      uint32_t decrypted_text_length = sgx_get_encrypt_txt_len(secret);
+      uint8_t decrypted_text[decrypted_text_length];
+      sgx_status_t st;
+
+      st = sgx_unseal_data(secret, NULL, 0, decrypted_text, &decrypted_text_length);
+      if (st != SGX_SUCCESS) {
+        LL_CRITICAL("exception when unsealing dataset");
+        return -1;
+      }
+
+      string entry = (char*)decrypted_text;
+      if (memcmp(decrypted_text + 21, http_resp, credential.size()) == 0) {
         new_identity = false;
-        memcpy(wallet_addr, decrypted_text + sep_pose + 1, 20);
-        LL_INFO("Identity found in dataset! Issue to the original wallet.");
+        LL_INFO("Identity found in dataset!"); // Issue to the original wallet.");
+        *resp = ID_EXISTS;
         break;
       }
-    }
-    catch (const std::exception &e) {
-      LL_CRITICAL("exception while handling request: %s", e.what());
-    }
-    start = pos + 1;
-    pos = sealed.find("\n", start);
-  }
-
-  if (new_identity) {
-    LL_INFO("New identity!");
-    memcpy(contract_credential + 20 + credential.size(), (char*)":", 1);
-    memcpy(contract_credential + 21 + credential.size(), wallet_addr, 20);
-    auto len = sgx_calc_sealed_data_size(0, 41 + credential.size());
-    sgx_sealed_data_t *seal_buffer = (sgx_sealed_data_t *) malloc(len);
-    sgx_status_t st = sgx_seal_data(0, NULL, 41 + credential.size(),
-                                    contract_credential, len, seal_buffer);
-    unsigned char secret_sealed[2000];
-    memcpy(secret_sealed, seal_buffer, len);
-    free(seal_buffer);
-
-    if (st != SGX_SUCCESS) {
-      LL_DEBUG("Failed to seal. Ecall returned %d", st);
-      return -1;
+      start = pos + 1;
+      pos = sealed.find("\n", start);
     }
     
-    *newdata_len = static_cast<size_t>(
-      ext::b64_ntop(secret_sealed, len, (char*)newdata, 2000));
+    if (new_identity) {
+      LL_INFO("New identity!");
+      *resp = NEW_ID;
+      unsigned char new_entry[100];
+      memcpy(new_entry, wallet_addr, 20);
+      memcpy(new_entry + 20, (char*)":", 1);
+      memcpy(new_entry + 21, credential.c_str(), credential.size());
+      auto len = sgx_calc_sealed_data_size(0, 21 + credential.size());
+      sgx_sealed_data_t *seal_buffer = (sgx_sealed_data_t *) malloc(len);
+      sgx_status_t st = sgx_seal_data(0, NULL, 21 + credential.size(),
+          new_entry, len, seal_buffer);
+      unsigned char secret_sealed[2000];
+      memcpy(secret_sealed, seal_buffer, len);
+      free(seal_buffer);
 
-    LL_INFO("Encrypted new identity (%d bytes): %s", *newdata_len, newdata);
+      if (st != SGX_SUCCESS) {
+        LL_CRITICAL("Failed to seal. Ecall returned %d", st);
+        return -1;
+      }
+
+      *newdata_len = static_cast<size_t>(
+          ext::b64_ntop(secret_sealed, len, (char*)newdata, 2000));
+
+      LL_INFO("Encrypted new identity (%d bytes): %s", *newdata_len, newdata);
+    }
+  }
+  catch (const std::exception &e) {
+    LL_CRITICAL("exception while handling request: %s", e.what());
+    return -1;
   }
 
-  
+/*  
   try {
     LL_INFO("Signing message");
     uint8_t contract_wallet[80];
@@ -245,7 +259,7 @@ int identity_token(
     LL_CRITICAL("%s", e.what());
     return INTERNAL_ERR;
   }
-
+*/
   return 0;
 }
 

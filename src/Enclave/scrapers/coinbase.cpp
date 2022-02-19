@@ -63,95 +63,106 @@
 using std::string;
 
 err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, char *resp_data) {
-  char* loc = strstr((char*)data, (char*)"\n");
-  int pos = loc - (char*)data;
+  string api_response;
+  
   char url[256];
-  const int offset = 29; // coinbase
-  strncpy(url, (char*)data + offset, pos - offset);
-  url[pos - offset] = 0;
-  data = data + pos + 1;
-  data_len -= pos + 1;
   std::vector<string> header;
-  loc = strstr((char*)data, "\n");
-  while (loc!= NULL) {
-    pos = loc - (char*)data;
-    char tmp[1000000];
-    strncpy(tmp, (char*)data, pos);
-    tmp[pos] = 0;
-    if (pos > 0) header.push_back(string(tmp));
+  try {
+    char* loc = strstr((char*)data, (char*)"\n");
+    int pos = loc - (char*)data;
+    const int offset = 29; // coinbase
+    strncpy(url, (char*)data + offset, pos - offset);
+    url[pos - offset] = 0;
     data = data + pos + 1;
     data_len -= pos + 1;
     loc = strstr((char*)data, "\n");
-  }
-  if (data_len > 0) {
+    while (loc!= NULL) {
+      pos = loc - (char*)data;
+      char tmp[1000000];
+      strncpy(tmp, (char*)data, pos);
+      tmp[pos] = 0;
+      if (pos > 0) header.push_back(string(tmp));
+      data = data + pos + 1;
+      data_len -= pos + 1;
+      loc = strstr((char*)data, "\n");
+    }
+    if (data_len > 0) {
       header.push_back(string((char*)data));
+    }
+  } catch (const std::runtime_error &e) {
+    LL_INFO("%s", e.what());
+    return WEB_ERROR;
   }
-  LL_DEBUG("url: %s", url);
 
   HttpRequest httpRequest("accounts.coinbase.com", url, header, true);
   HttpsClient httpClient(httpRequest);
 
-  string api_response;
   try {
     HttpResponse response = httpClient.getResponse();
     api_response = response.getContent();
+    httpClient.close();
   } catch (const std::runtime_error &e) {
-    LL_CRITICAL("%s", e.what());
+    LL_INFO("%s", e.what());
     httpClient.close();
     return WEB_ERROR;
   }
  
   LL_INFO("HTTP response received.");
-  LL_INFO("[DEMO ONLY, TO BE SEALED] response from Coinbase:\n%s", api_response.c_str());
   if (api_response.empty()) {
-    LL_CRITICAL("api return empty");
+    LL_INFO("api return empty");
     return WEB_ERROR;
   }
 
-  picojson::value response_struct;
-  string err = picojson::parse(response_struct, api_response);
-  
-  if (!err.empty() || !response_struct.is<picojson::object>()) {
-    LL_CRITICAL("can't parse %s", api_response.c_str());
-    return WEB_ERROR;
-  }
-  if (response_struct.contains("error")) {
-    if (response_struct.get("error").is<string>()) {
-      err = response_struct.get("error").get<string>();
+  try {
+    picojson::value response_struct;
+    string err = picojson::parse(response_struct, api_response);
+
+    if (!err.empty() || !response_struct.is<picojson::object>()) {
+      LL_INFO("can't parse response"); // %s", api_response.c_str());
+      return WEB_ERROR;
+    }
+    if (response_struct.contains("error")) {
+      if (response_struct.get("error").is<string>()) {
+        err = response_struct.get("error").get<string>();
+      }
+
+      LL_INFO("%s", err.c_str());
+      return WEB_ERROR;
     }
 
-    LL_CRITICAL("%s", err.c_str());
-    return WEB_ERROR;
-  }
+    string name = "";
+    picojson::value response_ex_struct = response_struct.get("first_name");
+    if (response_ex_struct.is<string>()) {
+      name = (string)response_ex_struct.get<string>();
+    } else return INVALID_PARAMS;
+    response_ex_struct = response_struct.get("last_name");
+    if (response_ex_struct.is<string>()) {
+      name = name + " " + (string)response_ex_struct.get<string>();
+    } else return INVALID_PARAMS;
+    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
 
-  string name = "";
-  picojson::value response_ex_struct = response_struct.get("first_name");
-  if (response_ex_struct.is<string>()) {
-    name = (string)response_ex_struct.get<string>();
-  } else return INVALID_PARAMS;
-  response_ex_struct = response_struct.get("last_name");
-  if (response_ex_struct.is<string>()) {
-    name = name + " " + (string)response_ex_struct.get<string>();
-  } else return INVALID_PARAMS;
-  std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+    string dob = "";
+    response_ex_struct = response_struct.get("dob_year");
+    if (response_ex_struct.is<int64_t>()) {
+      dob = std::to_string(response_ex_struct.get<int64_t>());
+    } else return INVALID_PARAMS;
+    response_ex_struct = response_struct.get("dob_month");
+    if (response_ex_struct.is<int64_t>()) {
+      string month = std::to_string(response_ex_struct.get<int64_t>());
+      dob = dob + "-" + std::string(2 - month.length(), '0') + month;
+    } else return INVALID_PARAMS;
+    response_ex_struct = response_struct.get("dob_day");
+    if (response_ex_struct.is<int64_t>()) {
+      string day = std::to_string(response_ex_struct.get<int64_t>());
+      dob = dob + "-" + std::string(2 - day.length(), '0') + day;
+    } else return INVALID_PARAMS;
+
+    name = dob + name;
+    name.copy(resp_data, name.size());
+  } catch (const std::exception &e) {
+    LL_INFO("%s", e.what());
+    return INVALID_PARAMS;
+  }
   
-  string dob = "";
-  response_ex_struct = response_struct.get("dob_year");
-  if (response_ex_struct.is<int64_t>()) {
-    dob = std::to_string(response_ex_struct.get<int64_t>());
-  } else return INVALID_PARAMS;
-  response_ex_struct = response_struct.get("dob_month");
-  if (response_ex_struct.is<int64_t>()) {
-    string month = std::to_string(response_ex_struct.get<int64_t>());
-    dob = dob + "-" + std::string(2 - month.length(), '0') + month;
-  } else return INVALID_PARAMS;
-  response_ex_struct = response_struct.get("dob_day");
-  if (response_ex_struct.is<int64_t>()) {
-    string day = std::to_string(response_ex_struct.get<int64_t>());
-    dob = dob + "-" + std::string(2 - day.length(), '0') + day;
-  } else return INVALID_PARAMS;
-  
-  name = dob + name;
-  name.copy(resp_data, name.size());
   return NO_ERROR;
 }
