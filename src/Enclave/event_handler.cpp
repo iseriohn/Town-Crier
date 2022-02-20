@@ -73,11 +73,13 @@
 #include "hybrid_cipher.h"
 #include "env.h"
 
+const size_t MAX_LEN = 2000000;
+
 int unseal_data(unsigned char* sealed_data,
     size_t sealed_data_len,
     unsigned char* unsealed_data,
     uint32_t* unsealed_data_len) {
-  unsigned char sealed_bytes[2000000];
+  unsigned char sealed_bytes[MAX_LEN];
   try {
     size_t buffer_used = (size_t)ext::b64_pton(reinterpret_cast<char*>(sealed_data),
         sealed_bytes,
@@ -101,7 +103,25 @@ int unseal_data(unsigned char* sealed_data,
   return 0;
 }
 
-int seal_data() {
+int seal_data(unsigned char* unsealed_data,
+              uint32_t unsealed_data_len,
+              unsigned char* sealed_data,
+              size_t* sealed_data_len) {
+  auto len = sgx_calc_sealed_data_size(0, unsealed_data_len);
+  sgx_sealed_data_t *seal_buffer = (sgx_sealed_data_t *) malloc(MAX_LEN);
+  sgx_status_t st = sgx_seal_data(0, NULL, unsealed_data_len,
+      unsealed_data, len, seal_buffer);
+  //memcpy(secret_sealed, seal_buffer, len);
+
+  if (st != SGX_SUCCESS) {
+    LL_CRITICAL("Failed to seal. Ecall returned %d", st);
+    free(seal_buffer);
+    return -1;
+  }
+
+  *sealed_data_len = static_cast<size_t>(
+      ext::b64_ntop((unsigned char*)seal_buffer, len, (char*)sealed_data, MAX_LEN));
+  free(seal_buffer);
   return 0;
 }
 
@@ -118,7 +138,7 @@ int raffle_run(
                    unsigned char* resp) {
                    //unsigned char* signature) {
   // data_entry: 
-	// "[wallet addr]!\n"
+	// "[0][wallet addr]!\n"
 	// "[source][wallet addr]:[credential]\n"
   try {
     LL_INFO("run raffle!");
@@ -126,25 +146,32 @@ int raffle_run(
         sealed_data_len - 40, sealed_data + 40,
         40, sealed_data); 
     size_t num_entries = 0;
+    size_t num_entries_poap = 0;
     bool new_identity = true;
-    unsigned char participants[2000000];
-    uint8_t decrypted_text[2000000];
+    unsigned char participants[MAX_LEN];
+    uint8_t decrypted_text[MAX_LEN];
     uint32_t decrypted_text_length = 0;
     int ret = unseal_data(dataset, dataset_len, decrypted_text, &decrypted_text_length);
     if (ret != 0) {
       LL_CRITICAL("Error when unsealing data");
       return -1;
     }
+    LL_INFO("dateset unsealed");
+
     if (decrypted_text_length > 0) {
-			if (decrypted_text_length >= 22 && decrypted_text[20] == uint8_t('!')) {
-        resp = (unsigned char*)ucharToHexString(decrypted_text, 20).c_str();
-				LL_INFO("Raffle winner 0x%s already chosen", resp);
-        return 0;
-			}
       size_t start = 0;
       while (start < decrypted_text_length) {
-        memcpy(participants + num_entries * 20, decrypted_text + start, 20);
-        start = start + 21;
+        if (decrypted_text_length - start >= 23 && decrypted_text[start + 21] == uint8_t('!')) {
+          memcpy(resp, ucharToHexString(decrypted_text + start + 1, 20).c_str(), 40);
+          LL_INFO("Raffle winner 0x%s already chosen", resp);
+          LL_INFO("%d identities existed in database, %d used POAPs", num_entries, num_entries_poap);
+          return 0;
+        }
+        memcpy(participants + num_entries * 20, decrypted_text + start + 1, 20);
+        if ((int)decrypted_text[start] == TYPE_POAP) {
+          num_entries_poap += 1;
+        }
+        start = start + 22;
         num_entries += 1;
         while (start < decrypted_text_length && decrypted_text[start] != '\n') {
           start += 1;
@@ -152,45 +179,28 @@ int raffle_run(
         start = start + 1;
       }
     }
-    LL_INFO("total identities: %d", num_entries);
+    LL_INFO("%d identities existed in database, %d used POAPs", num_entries, num_entries_poap);
 
     if (num_entries > 0) {
       auto rand_idx = get_random_number(sealed_data, sealed_data_len, num_entries);
       LL_INFO("random number: %d", rand_idx);
-      memcpy(resp, ucharToHexString(participants + rand_idx * 20, 20).c_str(), 20);
+      memcpy(resp, ucharToHexString(participants + rand_idx * 20, 20).c_str(), 40);
       LL_INFO("winner address 0x%s", resp);
+      
+      memcpy(decrypted_text + decrypted_text_length, (char*)"\0", 1);
+      memcpy(decrypted_text + decrypted_text_length + 1, participants + rand_idx * 20, 20);
+      memcpy(decrypted_text + decrypted_text_length + 21, (char*)"!", 1);
+      memcpy(decrypted_text + decrypted_text_length + 22, (char*)"\n", 1);
+      ret = seal_data(decrypted_text, decrypted_text_length + 23, newdata, newdata_len);
+      if (ret != 0) {
+        LL_CRITICAL("Error when sealing data");
+        return -1;
+      }
+      
+      LL_INFO("Encrypted new database (%d bytes): %s", *newdata_len, newdata);
     } else {
       resp = (unsigned char*)"No participant yet";
     }
-/*
-    LL_INFO(": %d", decrypted_text_length);
-    if (new_identity) { // TODO!!!
-      LL_INFO("New identity!");
-      *resp = NEW_ID;
-      memcpy(decrypted_text + decrypted_text_length, wallet_addr, 20);
-      memcpy(decrypted_text + decrypted_text_length + 20, (char*)":", 1);
-      memcpy(decrypted_text + decrypted_text_length + 21, credential.c_str(), credential.size());
-      memcpy(decrypted_text + decrypted_text_length + 21 + credential.size(), (char*)"\n", 1);
-      auto len = sgx_calc_sealed_data_size(0, decrypted_text_length + 22 + credential.size());
-      LL_INFO("len: %d", len);
-      sgx_sealed_data_t *seal_buffer = (sgx_sealed_data_t *) malloc(2000000);
-      sgx_status_t st = sgx_seal_data(0, NULL, decrypted_text_length + 22 + credential.size(),
-          decrypted_text, len, seal_buffer);
-      LL_INFO("%d, %d, %d", sizeof(secret_sealed), sizeof(seal_buffer), len);
-      //memcpy(secret_sealed, seal_buffer, len);
-
-      if (st != SGX_SUCCESS) {
-        LL_CRITICAL("Failed to seal. Ecall returned %d", st);
-        free(seal_buffer);
-        return -1;
-      }
-
-      *newdata_len = static_cast<size_t>(
-          ext::b64_ntop((unsigned char*)seal_buffer, len, (char*)newdata, 2000000));
-      free(seal_buffer);
-      LL_INFO("Encrypted new identity (%d bytes): %s", *newdata_len, newdata);
-    }
-*/
   }
   catch (const std::exception &e) {
     LL_CRITICAL("exception while handling request: %s", e.what());
@@ -231,7 +241,7 @@ int identity_token(
   }
   unsigned char wallet_addr[20];
   memcpy(wallet_addr, data, 20);
-  auto source = data[20];
+  uint8_t source = data[20];
   data = data + 21;
   data_len -= 21;
   //LL_DEBUG("Source: %d", source);
@@ -285,44 +295,38 @@ int identity_token(
       return 0;
     }
   }
-  LL_DEBUG("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(http_resp), http_resp);
+  LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(http_resp), http_resp);
   string credential = (char*)http_resp;
 
-  // data_entry: "[wallet addr]:[credential]"
+  // data_entry: "[source][wallet addr]:[credential]"
   try {
     // encrypt all entries as a whole
     size_t num_entries = 0;
     bool new_identity = true;
-    unsigned char secret_sealed[2000000];
-    uint8_t decrypted_text[2000000];
+    uint8_t decrypted_text[MAX_LEN];
     uint32_t decrypted_text_length = 0;
-    size_t buffer_used = (size_t)ext::b64_pton(reinterpret_cast<char*>(dataset),
-        secret_sealed,
-        sizeof secret_sealed);
-    if (buffer_used > 0) {
-      auto secret = reinterpret_cast<sgx_sealed_data_t*>(secret_sealed);
-      decrypted_text_length = sgx_get_encrypt_txt_len(secret);
-      sgx_status_t st;
+    int ret = unseal_data(dataset, dataset_len, decrypted_text, &decrypted_text_length);
+    if (ret != 0) {
+      LL_CRITICAL("Error when unsealing data");
+      return -1;
+    }
+    LL_INFO("dateset unsealed");
 
-      st = sgx_unseal_data(secret, NULL, 0, decrypted_text, &decrypted_text_length);
-      if (st != SGX_SUCCESS) {
-        LL_CRITICAL("exception when unsealing dataset");
-        return -1;
-      }
-      LL_INFO("dateset unsealed");
-			if (decrypted_text_length >= 22 && decrypted_text[20] == uint8_t('!')) {
-				*resp = RAFFLE_END;
-				return 0;
-			}
+    if (decrypted_text_length > 0) {
       size_t start = 0;
       while (start < decrypted_text_length) {
+			  if (decrypted_text_length - start >= 23 && decrypted_text[start + 21] == uint8_t('!')) {
+				  *resp = RAFFLE_END;
+          LL_INFO("Raffle already ended"); 
+				  return 0;
+			  }
+
         num_entries += 1;
-        start = start + 21;
+        start = start + 22;
         if (memcmp(http_resp, decrypted_text + start, credential.size()) == 0) {
           new_identity = false;
-          LL_INFO("Identity found in dataset!"); // TODO!!!
+          //LL_INFO("Identity found in dataset!"); // TODO!!!
           *resp = ID_EXISTS;
-          break; //TODO uncomment it!!!
         }
         size_t pos = start;
         while (pos < decrypted_text_length && decrypted_text[pos] != '\n') {
@@ -331,30 +335,21 @@ int identity_token(
         start = pos + 1;
       }
     }
-    LL_INFO("total identities: %d", num_entries);
+    LL_INFO("%d identities existed in database", num_entries);
 
-    if (new_identity) { // TODO!!!
+    if (new_identity || !new_identity) { // TODO!!!
       LL_INFO("New identity!");
       *resp = NEW_ID;
-      memcpy(decrypted_text + decrypted_text_length, wallet_addr, 20);
-      memcpy(decrypted_text + decrypted_text_length + 20, (char*)":", 1);
-      memcpy(decrypted_text + decrypted_text_length + 21, credential.c_str(), credential.size());
-      memcpy(decrypted_text + decrypted_text_length + 21 + credential.size(), (char*)"\n", 1);
-      auto len = sgx_calc_sealed_data_size(0, decrypted_text_length + 22 + credential.size());
-      sgx_sealed_data_t *seal_buffer = (sgx_sealed_data_t *) malloc(2000000);
-      sgx_status_t st = sgx_seal_data(0, NULL, decrypted_text_length + 22 + credential.size(),
-          decrypted_text, len, seal_buffer);
-      //memcpy(secret_sealed, seal_buffer, len);
-
-      if (st != SGX_SUCCESS) {
-        LL_CRITICAL("Failed to seal. Ecall returned %d", st);
-        free(seal_buffer);
+      memcpy(decrypted_text + decrypted_text_length, &source, 1);
+      memcpy(decrypted_text + decrypted_text_length + 1, wallet_addr, 20);
+      memcpy(decrypted_text + decrypted_text_length + 21, (char*)":", 1);
+      memcpy(decrypted_text + decrypted_text_length + 22, credential.c_str(), credential.size());
+      memcpy(decrypted_text + decrypted_text_length + 22 + credential.size(), (char*)"\n", 1);
+      ret = seal_data(decrypted_text, decrypted_text_length + 23 + credential.size(), newdata, newdata_len);
+      if (ret != 0) {
+        LL_CRITICAL("Error when sealing data");
         return -1;
       }
-
-      *newdata_len = static_cast<size_t>(
-          ext::b64_ntop((unsigned char*)seal_buffer, len, (char*)newdata, 2000000));
-      free(seal_buffer);
       LL_INFO("Encrypted new database (%d bytes): %s", *newdata_len, newdata);
     }
     /*

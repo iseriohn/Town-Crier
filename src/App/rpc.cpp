@@ -190,6 +190,8 @@ int ecall_ret = TC_SUCCESS;
     response->set_data("Newly registered");
   } else if (resp == POAP_NOT_FOUND) {
     response->set_data("POAP not found");
+  } else if (resp == RAFFLE_END) {
+    response->set_data("Raffle already ended");
   } else {
     response->set_data("Invalid query");
   }

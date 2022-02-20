@@ -44,8 +44,10 @@ def rpc_call(data):
 
 
 if __name__ == "__main__":
-    con = w3.eth.contract(address="0x9563851e73c798caD7914BaD7092174dC5e263D5",abi=abi)
+    addr = "0x9563851e73c798caD7914BaD7092174dC5e263D5" 
+    con = w3.eth.contract(address=addr,abi=abi)
 
     rand = con.functions.getRandomWordYo().call()
-    print(rand)
-    print(rpc_call(str(rand)).encode())
+    print("Chainlink randomness oracle contract:", addr)
+    print("Random number from Chainlink:", rand)
+    print("Winner picked by SGX: 0x{}".format(rpc_call(addr[2:] + str(rand))))

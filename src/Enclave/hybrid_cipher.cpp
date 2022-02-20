@@ -56,6 +56,38 @@ static void my_debug(void *ctx,
   mbedtls_printf("%s:%d: %s", file, line, str);
 }
 
+/*!
+ * recover (unseal) the public key and address from the sealed secret key.
+ * @param secret
+ * @param secret_len
+ * @param pubkey
+ * @return
+ */
+int hybrid_keygen_unseal(const sgx_sealed_data_t *secret, size_t secret_len,
+                        unsigned char *pubkey) {
+  // used by edge8r
+  (void) secret_len;
+
+  uint32_t decrypted_text_length = sgx_get_encrypt_txt_len(secret);
+  uint8_t y[decrypted_text_length];
+  sgx_status_t st;
+
+  st = sgx_unseal_data(secret, NULL, 0, y, &decrypted_text_length);
+  if (st != SGX_SUCCESS) {
+    LL_CRITICAL("unseal returned %x", st);
+    return -1;
+  }
+
+  // initialize the local secret key
+  mbedtls_mpi secret_key;
+  mbedtls_mpi_init(&secret_key);
+  mbedtls_mpi_read_binary(&secret_key, y, sizeof y);
+
+  auto ret = HybridEncryption::secretToPubkey(&secret_key, pubkey);
+  mbedtls_mpi_free(&secret_key);
+  return ret;
+}
+
 int tc_provision_hybrid_key(const sgx_sealed_data_t *secret, size_t secret_len) {
   // used by edge8r
   (void) secret_len;
@@ -151,6 +183,8 @@ HybridEncryption::HybridEncryption() {
   if (ret != 0) {
     mbedtls_printf("failed in mbedtls_ctr_drbg_seed: %d\n", ret);
     mbedtls_strerror(ret, err_msg, sizeof err_msg);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
     throw runtime_error(err_msg);
   }
 
@@ -166,6 +200,8 @@ HybridEncryption::HybridEncryption() {
   };
 
   mbedtls_debug_set_threshold(-1);
+  mbedtls_ssl_free(&dummy_ssl_ctx);
+  mbedtls_ssl_config_free(&dummy_ssl_cfg);
 }
 
 string HybridEncryption::encode(const HybridCiphertext &ciphertext) {
@@ -211,7 +247,7 @@ HybridCiphertext HybridEncryption::decode(const string &cipher_b64) {
 //  mbedtls_ecdh_init(&ecdh_ctx_tc);
 //
 //  // load the group
-//  ret = mbedtls_ecp_group_load(&ecdh_ctx_tc.grp, EC_GROUP);
+//  ret = mbedtls_ecp_group_load(&ecdh_ctx_tc.grp, HYBRID_GROUP);
 //  CHECK_RET(ret);
 //
 //  // generate an ephemeral key
@@ -258,9 +294,10 @@ void HybridEncryption::hybridDecrypt(const HybridCiphertext &ciphertext,
   mbedtls_ecdh_init(&ctx_tc);
 
   // load the group
-  ret = mbedtls_ecp_group_load(&ctx_tc.grp, EC_GROUP);
+  ret = mbedtls_ecp_group_load(&ctx_tc.grp, HYBRID_GROUP);
   if (ret != 0) {
     mbedtls_printf(" failed\n  ! mbedtls_ecp_group_load returned %d\n", ret);
+    mbedtls_ecdh_free(&ctx_tc);
     throw runtime_error(err(ret));
   }
 
@@ -276,6 +313,7 @@ void HybridEncryption::hybridDecrypt(const HybridCiphertext &ciphertext,
                                     mbedtls_ctr_drbg_random, &ctr_drbg);
   if (ret != 0) {
     mbedtls_printf(" failed\n  ! mbedtls_ecdh_compute_shared returned %d\n", ret);
+    mbedtls_ecdh_free(&ctx_tc);
     throw runtime_error(err(ret));
   }
 
@@ -289,6 +327,8 @@ void HybridEncryption::hybridDecrypt(const HybridCiphertext &ciphertext,
   aes_gcm_256_dec(aes_key, ciphertext.aes_iv,
                   &ciphertext.data[0], ciphertext.data.size(),
                   ciphertext.gcm_tag, &cleartext[0]);
+  
+  mbedtls_ecdh_free(&ctx_tc);
 }
 
 string HybridEncryption::hybridEncrypt(const ECPointBuffer tc_pubkey, const uint8_t *data, size_t data_len) {
@@ -307,7 +347,7 @@ void HybridEncryption::hybridEncrypt(const ECPointBuffer tc_pubkey,
   mbedtls_ecdh_init(&ctx_user);
 
   // load the group
-  ret = mbedtls_ecp_group_load(&ctx_user.grp, EC_GROUP);
+  ret = mbedtls_ecp_group_load(&ctx_user.grp, HYBRID_GROUP);
   CHECK_RET_GO(ret, cleanup);
 
   // generate an ephemeral key
@@ -404,7 +444,7 @@ int HybridEncryption::secretToPubkey(const mbedtls_mpi *seckey, ECPointBuffer pu
   int ret;
 
   mbedtls_ecdsa_init(&ctx);
-  mbedtls_ecp_group_load(&ctx.grp, EC_GROUP);
+  mbedtls_ecp_group_load(&ctx.grp, HYBRID_GROUP);
 
   mbedtls_mpi_copy(&ctx.d, seckey);
 
@@ -427,7 +467,7 @@ int HybridEncryption::secretToPubkey(const mbedtls_mpi *seckey, ECPointBuffer pu
   }
 
   // copy to user space
-  memcpy(pubkey, __pubkey, 65);
+  memcpy(pubkey, __pubkey + 1, 64);
   return 0;
 }
 

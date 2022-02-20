@@ -38,6 +38,11 @@ enclave {
                     [user_check] unsigned char *o_pubkey,
                     [user_check] unsigned char *o_address);
 
+        public int hybrid_keygen_unseal(
+                    [in,size=secret_len] const sgx_sealed_data_t *secret,
+                    size_t secret_len,
+                    [user_check] unsigned char* pubkey);
+
         public int ecdsa_keygen_unseal(
                     [in,size=secret_len] const sgx_sealed_data_t *secret,
                     size_t secret_len,
