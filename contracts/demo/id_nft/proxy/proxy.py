@@ -9,15 +9,16 @@ import tc_pb2_grpc
 
 import os
 import base64
-import web3
+
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 #import subprocess
 #command = './hybrid-enc/henc'
 #sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 #sgx_server = 'localhost:12345'
 sgx_server = 'localhost:8123'
-proxy_port = 9001
-proxy_host = "0.0.0.0" # 0.0.0.0 for remote connection
+ws_port = 9001
+ws_host = "0.0.0.0" # 0.0.0.0 for remote connection
 
 #wallet_addr = bytes.fromhex('0000000000000000000000000000000000000000')
 
@@ -51,13 +52,37 @@ async def request(websocket, path):
     await websocket.send(resp)
     print("Sent response: ", resp)
 
+class handler(BaseHTTPRequestHandler):
+    def _set_response(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+    
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        content = self.rfile.read(content_length) # <--- Gets the data itself
+        data = content.decode()[1:-1]
+        print("Received data:", data)
+        resp = rpc_call(data)
+        #resp = b"OK"
+        self._set_response()
+        self.wfile.write(resp.encode())
 
+
+# Use Caddy to host HTTPS: https://caddyserver.com/docs/install, https://caddyserver.com/docs/quick-starts/https#:~:text=The%20reverse%2Dproxy%20command
+# run $ sudo caddy reverse-proxy --from sgx.candid.id --to localhost:8080
 if __name__ == "__main__":
-#    args = sys.argv[1:]
-#    
-#    if len(args) >= 1 and web3.Web3.isAddress(args[0]):
-#        wallet_addr = bytes.fromhex(args[0][2:])
-#
-    start_server = websockets.serve(request, proxy_host, proxy_port)
-    asyncio.get_event_loop().run_until_complete(start_server)
-    asyncio.get_event_loop().run_forever()
+    args = sys.argv[1:]
+    if len(args) == 1 and args[0] == "-ws":
+        start_server = websockets.serve(request, ws_host, ws_port)
+        asyncio.get_event_loop().run_until_complete(start_server)
+        asyncio.get_event_loop().run_forever()
+    else:
+        with HTTPServer(('', 8080), handler) as server:
+            try:
+                server.serve_forever()
+            except KeyboardInterrupt:
+                pass
+            server.server_close()
+    

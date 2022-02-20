@@ -8,6 +8,7 @@ service towncrier {
   rpc process(Request) returns (Response) {}
   rpc participate(Data) returns (Empty) {}
   rpc id_nft(Data) returns (Data) {}
+  rpc raffle(Data) returns (Data) {}
 }
 
 message Data {

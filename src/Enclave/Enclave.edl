@@ -13,6 +13,11 @@ enclave {
                 [user_check] unsigned char* dataset, size_t dataset_len,
                 [user_check] unsigned char* newdata, [out] size_t* newdata_len,
                 [out] int* resp);
+        public int raffle_run(
+                [user_check] unsigned char* data, size_t data_len,
+                [user_check] unsigned char* dataset, size_t dataset_len,
+                [user_check] unsigned char* newdata, [out] size_t* newdata_len,
+                [user_check] unsigned char* resp);
         
         public int handle_request(
                    int nonce,

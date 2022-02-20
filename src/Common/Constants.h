@@ -70,6 +70,7 @@
 #define TYPE_SSA            0xC
 #define TYPE_COINBASE       0xD
 #define TYPE_POAP           0xE
+#define TYPE_CHAINLINK         0xF
 
 /* Possible return values to be used in Enclave-Relay Connections */
 #define TC_SUCCESS          0x0
@@ -88,5 +89,6 @@
 #define NEW_ID 1
 #define POAP_NOT_FOUND 2
 #define INVALID_QUERY 3
+#define RAFFLE_END 4
 
 #endif

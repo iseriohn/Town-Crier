@@ -422,3 +422,35 @@ exit:
   mbedtls_mpi_free(&s);
   return (ret);
 }
+
+int get_random_number(const unsigned char* seed, size_t seed_len, size_t range) {
+    uint32_t rand = 0;
+    uint8_t data_buf[50];
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+	
+    auto ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, seed, seed_len);
+    if (ret != 0) {  
+      LL_CRITICAL( " failed\n  ! mbedtls_ctr_drbg_seed returned %d(-0x%04x)\n", ret, -ret);
+      goto exit;
+    }
+
+    ret = mbedtls_ctr_drbg_random(&ctr_drbg, data_buf, sizeof(data_buf) );
+    if (ret != 0) {
+      LL_CRITICAL( " failed\n  ! mbedtls_ctr_drbg_random returned %d\n", ret );
+      goto exit;
+    }
+
+    for (int i = 0; i < sizeof(data_buf); i++) {
+      rand = rand * 256 + (uint32_t)data_buf[i];
+      rand = rand % range;
+    }
+
+exit:
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    return rand;
+}
