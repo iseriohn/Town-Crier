@@ -295,7 +295,7 @@ int identity_token(
       return 0;
     }
   }
-  LL_INFO("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(http_resp), http_resp);
+  //LL_DEBUG("[DEMO ONLY, TO BE SEALED] credential info (%d bytes): %s", strlen(http_resp), http_resp);
   string credential = (char*)http_resp;
 
   // data_entry: "[source][wallet addr]:[credential]"
@@ -325,7 +325,7 @@ int identity_token(
         start = start + 22;
         if (memcmp(http_resp, decrypted_text + start, credential.size()) == 0) {
           new_identity = false;
-          //LL_INFO("Identity found in dataset!"); // TODO!!!
+          LL_INFO("Identity found in dataset!"); // TODO!!!
           *resp = ID_EXISTS;
         }
         size_t pos = start;
@@ -337,7 +337,7 @@ int identity_token(
     }
     LL_INFO("%d identities existed in database", num_entries);
 
-    if (new_identity || !new_identity) { // TODO!!!
+    if (new_identity) { // TODO!!!
       LL_INFO("New identity!");
       *resp = NEW_ID;
       memcpy(decrypted_text + decrypted_text_length, &source, 1);
