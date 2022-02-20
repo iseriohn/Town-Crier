@@ -52,6 +52,71 @@ extern std::mutex mtx;           // mutex for critical section
   return grpc::Status::OK;
 }
 
+::grpc::Status RpcServer::raffle(::grpc::ServerContext* context,
+                                 const ::rpc::Data* request,
+                                 ::rpc::Data* response)
+{
+
+  mtx.lock();
+  //LOG4CXX_ERROR(this->logger, "Receive input data: " << request->data());
+int ecall_ret = TC_SUCCESS;
+
+  //unsigned char signature[65];
+  unsigned char resp[100] = {0};
+  try {
+    ifstream dataset;
+    dataset.open(config->getDatasetPath());
+    string file = "";
+    if (dataset.is_open()) {
+      string line;
+      while (getline (dataset,line)) {
+        file = file + line + "\n";
+      }
+      dataset.close();
+    }
+  
+    auto req_data = request->data();
+    unsigned char newdata[2000000] = {0};
+    size_t newdata_len = 0;
+    auto st = raffle_run(eid,
+                             &ecall_ret,
+                             reinterpret_cast<unsigned char*>(const_cast<char*>(req_data.c_str())), 
+                             req_data.length(),
+                             reinterpret_cast<unsigned char*>(const_cast<char*>(file.c_str())),
+                             file.length(),
+                             newdata,
+                             &newdata_len,
+                             resp
+                             //signature
+                             );
+
+    if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
+      LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
+        throw std::runtime_error("ecall failed");
+    } else {
+      this->logger->info("ecall succeeds");
+
+      if (newdata_len > 0) {
+        ofstream dataset;
+        dataset.open (config->getDatasetPath(), ios::out | ios::binary); 
+        if (dataset.is_open()) {
+          dataset << newdata << endl;
+          dataset.close();
+          this->logger->info("new identity written in dataset (sealed)");
+        }
+      }
+    }
+  }
+  catch (const std::exception& e) {
+    LOG4CXX_ERROR(this->logger, "exception: " << e.what())
+  }
+  
+  mtx.unlock();
+  
+  response->set_data(string(reinterpret_cast<char*>(resp)));
+  return grpc::Status::OK;
+}
+
 ::grpc::Status RpcServer::id_nft(::grpc::ServerContext* context,
                                  const ::rpc::Data* request,
                                  ::rpc::Data* response)
@@ -76,7 +141,7 @@ int ecall_ret = TC_SUCCESS;
     }
    
     auto req_data = request->data();
-    unsigned char newdata[2000] = {0};
+    unsigned char newdata[2000000] = {0};
     size_t newdata_len = 0;
     auto st = identity_token(eid,
                              &ecall_ret,
@@ -92,14 +157,13 @@ int ecall_ret = TC_SUCCESS;
 
     if (st != SGX_SUCCESS || ecall_ret != TC_SUCCESS) {
       LOG4CXX_ERROR(this->logger, "ecall to handle_request failed with " << st)
-        mtx.unlock();
         throw std::runtime_error("ecall failed");
     } else {
       this->logger->info("ecall succeeds");
 
-      if (newdata_len > 0 && resp == NEW_ID) {
+      if (newdata_len > 0) {
         ofstream dataset;
-        dataset.open (config->getDatasetPath(), ios::out | ios::app | ios::binary); 
+        dataset.open (config->getDatasetPath(), ios::out | ios::binary); 
         if (dataset.is_open()) {
           dataset << newdata << endl;
           dataset.close();
@@ -126,6 +190,8 @@ int ecall_ret = TC_SUCCESS;
     response->set_data("Newly registered");
   } else if (resp == POAP_NOT_FOUND) {
     response->set_data("POAP not found");
+  } else if (resp == RAFFLE_END) {
+    response->set_data("Raffle already ended");
   } else {
     response->set_data("Invalid query");
   }

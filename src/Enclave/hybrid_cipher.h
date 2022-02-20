@@ -98,7 +98,7 @@ class HybridCiphertext {
 
 class HybridEncryption {
  public:
-  static const mbedtls_ecp_group_id EC_GROUP = MBEDTLS_ECP_DP_SECP256R1;
+  static const mbedtls_ecp_group_id HYBRID_GROUP = MBEDTLS_ECP_DP_SECP256R1;
   static const AESIv iv;
   static const size_t PUBLIC_KEY_SIZE = 65;
 
@@ -159,6 +159,8 @@ class DecryptionException: public std::exception {
 };
 
 
+int hybrid_keygen_unseal(const sgx_sealed_data_t *secret, size_t secret_len,
+                        unsigned char *pubkey);
 int tc_provision_hybrid_key(const sgx_sealed_data_t *secret, size_t secret_len);
 int tc_get_hybrid_pubkey(ECPointBuffer pubkey);
 const string decrypt_query(const uint8_t* data, size_t data_len);

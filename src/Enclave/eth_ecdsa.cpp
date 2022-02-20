@@ -80,7 +80,7 @@ using std::runtime_error;
 #define SIGN_DEBUG
 #undef SIGN_DEBUG
 
-#define ECPARAMS MBEDTLS_ECP_DP_SECP256K1
+#define ECDSA_GROUP MBEDTLS_ECP_DP_SECP256K1
 
 // pubkey: 64 Bytes
 // SHA3-256: 32 Bytes
@@ -117,17 +117,17 @@ int __ecdsa_seckey_to_pubkey(const mbedtls_mpi *seckey, unsigned char *pubkey,
   unsigned char __pubkey[65];
   unsigned char __address[32];
   size_t buflen = 0;
-  int ret;
+  int ret = 0;
 
   mbedtls_ecdsa_init(&ctx);
-  mbedtls_ecp_group_load(&ctx.grp, ECPARAMS);
+  mbedtls_ecp_group_load(&ctx.grp, ECDSA_GROUP);
 
   mbedtls_mpi_copy(&ctx.d, seckey);
 
   ret = mbedtls_ecp_mul(&ctx.grp, &ctx.Q, &ctx.d, &ctx.grp.G, NULL, NULL);
   if (ret != 0) {
     LL_CRITICAL("Error: mbedtls_ecp_mul returned %d", ret);
-    return -1;
+    goto exit;
   }
 
   ret = mbedtls_ecp_point_write_binary(
@@ -137,7 +137,7 @@ int __ecdsa_seckey_to_pubkey(const mbedtls_mpi *seckey, unsigned char *pubkey,
     return -1;
   } else if (ret == MBEDTLS_ERR_ECP_BAD_INPUT_DATA) {
     LL_CRITICAL("bad input data");
-    return -1;
+    goto exit;
   }
   if (buflen != 65) {
     LL_CRITICAL("ecp serialization is incorrect olen=%ld", buflen);
@@ -146,13 +146,16 @@ int __ecdsa_seckey_to_pubkey(const mbedtls_mpi *seckey, unsigned char *pubkey,
   ret = keccak(__pubkey + 1, 64, __address, 32);
   if (ret != 0) {
     LL_CRITICAL("keccak returned %d", ret);
-    return -1;
+    goto exit;
   }
 
   // copy to user space
   memcpy(pubkey, __pubkey + 1, 64);
   memcpy(address, __address + 12, 20);
-  return 0;
+
+exit:
+  mbedtls_ecdsa_free(&ctx);
+  return ret;
 }
 
 /*!
@@ -183,7 +186,9 @@ int ecdsa_keygen_unseal(const sgx_sealed_data_t *secret, size_t secret_len,
   mbedtls_mpi_init(&secret_key);
   mbedtls_mpi_read_binary(&secret_key, y, sizeof y);
 
-  return __ecdsa_seckey_to_pubkey(&secret_key, pubkey, address);
+  int ret = __ecdsa_seckey_to_pubkey(&secret_key, pubkey, address);
+  mbedtls_mpi_free(&secret_key);
+  return ret;
 }
 
 /*!
@@ -210,7 +215,8 @@ int tc_provision_ecdsa_key(const sgx_sealed_data_t *secret, size_t secret_len) {
 
   // initialize the global secret key
   mbedtls_mpi_init(&g_secret_key);
-  return mbedtls_mpi_read_binary(&g_secret_key, y, sizeof y);
+  int ret = mbedtls_mpi_read_binary(&g_secret_key, y, sizeof y);
+  return ret;
 }
 
 /*!
@@ -246,14 +252,14 @@ int ecdsa_keygen_seal(unsigned char *o_sealed, size_t *olen,
   mbedtls_mpi_init(&secret);
 
   mbedtls_ecp_group_init(&grp);
-  mbedtls_ecp_group_load(&grp, ECPARAMS);
+  mbedtls_ecp_group_load(&grp, ECDSA_GROUP);
 #ifdef PREDEFINED_SECKEY
   LL_CRITICAL("*** PREDEFINED SECRET KEY IS USED ***");
   LL_CRITICAL("*** DISABLE THIS BEFORE DEPLOY ***");
   ret = mbedtls_mpi_read_string(&secret, 16, PREDEFINED_SECKEY);
   if (ret != 0) {
     LL_CRITICAL("Error: mbedtls_mpi_read_string returned %d", ret);
-    return -1;
+    goto exit;
   }
 #else
   mbedtls_mpi_fill_random(&secret, grp.nbits / 8, mbedtls_sgx_drbg_random,
@@ -314,7 +320,7 @@ int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss,
   mbedtls_ecdsa_init(&ctx_verify);
   mbedtls_ctr_drbg_init(&ctr_drbg);
 
-  mbedtls_ecp_group_load(&ctx_sign.grp, ECPARAMS);
+  mbedtls_ecp_group_load(&ctx_sign.grp, ECDSA_GROUP);
 
   if (g_secret_key.p == NULL) {
     LL_CRITICAL(
@@ -392,7 +398,7 @@ int ecdsa_verify(const uint8_t *data, size_t in_len, const uint8_t *pubkey, cons
     goto exit;
   }
   
-  mbedtls_ecp_group_load(&ctx_verify.grp, ECPARAMS);
+  mbedtls_ecp_group_load(&ctx_verify.grp, ECDSA_GROUP);
   ret = mbedtls_ecp_point_read_binary(&ctx_verify.grp, &ctx_verify.Q, pubkey, 65);
   if (ret != 0) {
     LL_INFO("Error: mbedtls_ecp_point_read_binary returned %d", ret);
@@ -421,4 +427,49 @@ exit:
   mbedtls_mpi_free(&r);
   mbedtls_mpi_free(&s);
   return (ret);
+}
+
+int get_random_number(const unsigned char* seed, size_t seed_len, size_t range) {
+    int ret;
+    uint32_t rand = 0;
+    uint8_t data_buf[50];
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+
+    unsigned char combined_seed[200];
+    memcpy(combined_seed, seed, seed_len);
+	  
+    ret = mbedtls_mpi_write_binary(&g_secret_key, combined_seed, 32);
+    if( ret != 0 )
+    {
+      LL_CRITICAL( " failed\n  ! mbedtls_mpi_write_binary returned %d\n", ret );
+      goto exit;
+    }
+
+
+
+    ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, seed, seed_len);
+    if (ret != 0) {  
+      LL_CRITICAL( " failed\n  ! mbedtls_ctr_drbg_seed returned %d(-0x%04x)\n", ret, -ret);
+      goto exit;
+    }
+
+    ret = mbedtls_ctr_drbg_random(&ctr_drbg, data_buf, sizeof(data_buf) );
+    if (ret != 0) {
+      LL_CRITICAL( " failed\n  ! mbedtls_ctr_drbg_random returned %d\n", ret );
+      goto exit;
+    }
+
+    for (int i = 0; i < sizeof(data_buf); i++) {
+      rand = rand * 256 + (uint32_t)data_buf[i];
+      rand = rand % range;
+    }
+
+exit:
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    return rand;
 }

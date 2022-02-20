@@ -86,17 +86,24 @@ string unseal_key(sgx_enclave_id_t eid, string sealed_key, tc::keyUtils::KeyType
 
   int ret = 0;
   sgx_status_t ecall_ret;
-  ecall_ret = ecdsa_keygen_unseal(
-      eid, &ret, reinterpret_cast<sgx_sealed_data_t*>(secret_sealed),
-      buffer_used, pubkey, address);
-  if (ecall_ret != SGX_SUCCESS || ret != 0) {
-    throw tc::EcallException(
-        ecall_ret, "ecdsa_keygen_unseal failed with " + std::to_string(ret));
-  }
   switch (key_type) {
     case tc::keyUtils::ECDSA_KEY:
+      ecall_ret = ecdsa_keygen_unseal(
+          eid, &ret, reinterpret_cast<sgx_sealed_data_t*>(secret_sealed),
+          buffer_used, pubkey, address);
+      if (ecall_ret != SGX_SUCCESS || ret != 0) {
+        throw tc::EcallException(
+            ecall_ret, "ecdsa_keygen_unseal failed with " + std::to_string(ret));
+      }
       return bufferToHex(address, sizeof address, true);
     case tc::keyUtils::HYBRID_ENCRYPTION_KEY:
+      ecall_ret = hybrid_keygen_unseal(
+          eid, &ret, reinterpret_cast<sgx_sealed_data_t*>(secret_sealed),
+          buffer_used, pubkey);
+      if (ecall_ret != SGX_SUCCESS || ret != 0) {
+        throw tc::EcallException(
+            ecall_ret, "hybrid_keygen_unseal failed with " + std::to_string(ret));
+      }
       // take special care of the first byte
       unsigned char _pubkey65b[65];
       _pubkey65b[0] = 0x04;

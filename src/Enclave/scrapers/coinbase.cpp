@@ -141,6 +141,7 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
     } else return INVALID_PARAMS;
     std::transform(name.begin(), name.end(), name.begin(), ::toupper);
 
+/* comment out for demo
     string dob = "";
     response_ex_struct = response_struct.get("dob_year");
     if (response_ex_struct.is<int64_t>()) {
@@ -158,6 +159,7 @@ err_code CoinbaseScraper::handle_long_resp(const char *data, size_t data_len, ch
     } else return INVALID_PARAMS;
 
     name = dob + name;
+*/
     name.copy(resp_data, name.size());
   } catch (const std::exception &e) {
     LL_INFO("%s", e.what());

@@ -57,6 +57,7 @@ extern "C" {
 #endif
 const string ETH_HASH_PREFIX = string("\x19") + "Ethereum Signed Message:\n40";
 
+int get_random_number(const unsigned char* seed, size_t seed_len, size_t range);
 int ecdsa_keygen_unseal(const sgx_sealed_data_t *secret, size_t secret_len, unsigned char *pubkey, unsigned char *address);
 int ecdsa_keygen_seal(unsigned char *o_sealed, size_t *olen, unsigned char *o_pubkey, unsigned char *o_address);
 int ecdsa_sign(const uint8_t *data, size_t in_len, uint8_t *rr, uint8_t *ss, uint8_t *vv);
