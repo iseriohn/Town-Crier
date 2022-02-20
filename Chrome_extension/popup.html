@@ -3,6 +3,11 @@
     </head>
     <body>
         <h1>What is your wallet address for receiving the Identity NFT?</h1>
+        <h2>By entering your wallet address and clicking to submit, the Intel SGX will collect your identity information from the corresponding website.</h2>
+        <h2>SGX provides an isolated, trusted execution environment, so the program running inside it is tamper resistant and the data is confidential.</h2>
+        <h2>For the purpose of demonstration, SGX runs in SIM mode.
+          SGX will only scrape your legal name in this demo, to minimize the risk of pricacy leakage, but is capable of processing other credentials such as SSN for better identity deduplication.</h2>
+
         <input type="text" name="addressInput" id="addressInput" minlength="5" maxlength="42">
         <button id="myButton">Sumbit</button>
         <h1 id="status"></h1>
