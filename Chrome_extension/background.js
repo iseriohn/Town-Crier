@@ -197,7 +197,7 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
   }
   source = source_dict[data.substring(0, 36)]
   
-  chrome.tabs.create({url:"popup.html"}, function(tab) {
+  chrome.tabs.create({url:"walletform.html"}, function(tab) {
     console.log(tab.id);
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       if (sender.tab.id != tab.id) return;

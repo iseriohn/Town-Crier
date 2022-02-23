@@ -9,8 +9,6 @@
     "https://*/"
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "Open the popup",
     "default_icon": "icon.png"
   },
    "background": {
