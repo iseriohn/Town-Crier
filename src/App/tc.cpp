@@ -88,7 +88,7 @@ int main(int argc, const char *argv[])
 
   tc::Config conFig(argc, argv);
   config = &conFig;
-  LL_INFO("config:\n%s", config->toString().c_str());
+  //LL_INFO("config:\n%s", config->toString().c_str());
 
   int ret;
   sgx_enclave_id_t eid;
@@ -115,7 +115,7 @@ int main(int argc, const char *argv[])
     wallet_address =
         unseal_key(eid, config->getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
     provision_key(eid, config->getSealedSigKey(), tc::keyUtils::ECDSA_KEY);
-    LL_INFO("using wallet address at %s", wallet_address.c_str());
+    //LL_INFO("using wallet address at %s", wallet_address.c_str());
 
     // load the encryption key --- the key under which inputs are encrypted
     hybrid_pubkey = unseal_key(
