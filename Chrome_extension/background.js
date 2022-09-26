@@ -167,7 +167,7 @@ function removePrefix(str) {
   }
 }
 
-const addr = 'ws://20.106.154.181:9001'
+const addr = 'ws://20.121.218.65:9001'
 const https_url = 'https://sgx.candid.id'
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
@@ -208,7 +208,7 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       console.log(wallet);
 	    encoder = new TextEncoder('utf-8');
       encodedMsg = new Uint8Array([...wallet, source, ...encoder.encode(data)]);
-      encryptAndSendHttps(encodedMsg, tab.id);
+      encryptAndSendWs(encodedMsg, tab.id);
       return true;
     });
   });
