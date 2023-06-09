@@ -167,20 +167,22 @@ function removePrefix(str) {
   }
 }
 
-const addr = 'ws://20.121.218.65:9001'
+const addr = 'ws://20.172.208.29:9001'
 const https_url = 'https://sgx.candid.id'
 
 const sgx_pk = 'BBarzLnfkPo3nLmRjT82ifMm8sbQpQSqavgD9omSAkorhxG+/8C7OqVKduXw2SZmBKYQYTNyqt6DwU4XSy6hkTw='
 
 const source_dict = {
-    "https://secure.ssa.gov/myssa/myprofi": 12,
-    "https://accounts.coinbase.com/api/v1": 13,
+    "https://secure.ssa.gov/myssa/mypro": 12,
+    "https://accounts.coinbase.com/api/": 13,
+    "https://sakai.duke.edu/portal/site": 16,
 }
 
 const networkFilters = {
   urls: [
     "https://accounts.coinbase.com/api/v1/user",
-    "https://secure.ssa.gov/myssa/myprofile-api/profileInfo"
+    "https://secure.ssa.gov/myssa/myprofile-api/profileInfo",
+    "https://sakai.duke.edu/portal/site/",
   ]
 };
 
@@ -195,7 +197,7 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
       }
     }
   }
-  source = source_dict[data.substring(0, 36)]
+  source = source_dict[data.substring(0, 34)]
   
   chrome.tabs.create({url:"walletform.html"}, function(tab) {
     console.log(tab.id);
